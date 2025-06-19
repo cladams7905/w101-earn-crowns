@@ -35,24 +35,6 @@ This directory contains scripts to run the Wizard101 earn-crowns automation loca
    ./scripts/view-logs.sh
    ```
 
-## 🔧 Manual Setup
-
-If you prefer to set up the cron job manually:
-
-1. Open your crontab:
-
-   ```bash
-   crontab -e
-   ```
-
-2. Add a line to run the script (example for daily at 5:00 PM):
-
-   ```
-   0 17 * * * cd /path/to/your/w101decksmith && ./scripts/run-earn-crowns.sh
-   ```
-
-3. Save and exit the editor.
-
 ## 📋 Required Environment Variables
 
 Make sure your `.env.local` file contains:
@@ -65,16 +47,21 @@ WIZARD101_PASSWORD=your_password
 # TwoCaptcha for automated CAPTCHA solving
 TWO_CAPTCHA_API_KEY=your_twocaptcha_api_key
 
-# Supabase for quiz data storage
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
 # Optional: Google Gemini for AI-powered quiz answers
 GEMINI_API_KEY=your_gemini_api_key
 
 # Optional: Start date for the cron job
 CRON_START_DATE=2024-01-01
 ```
+
+## 📁 Quiz Data Storage
+
+Quiz answers are automatically stored locally in `scripts/quiz-answers.json`. The script will:
+
+- Create the file automatically if it doesn't exist
+- Load existing quiz answers on startup
+- Save new quiz answers as they're discovered
+- No external database or cloud storage required
 
 ## 📊 Logging
 
@@ -206,34 +193,6 @@ grep CRON /var/log/system.log | tail -10
 ./scripts/view-logs.sh
 ```
 
-### Regular Maintenance
+## Disclaimer
 
-- Review logs weekly for errors
-- Update credentials if needed
-- Clean old logs (automated every 30 days)
-- Monitor disk space usage
-
-### Performance Tips
-
-- The script reuses Chrome user data for faster startup
-- Quiz answers are cached in memory during execution
-- Logs are automatically rotated and cleaned
-
-## 🔐 Security Considerations
-
-- Store credentials securely in `.env.local`
-- Don't commit `.env.local` to version control
-- Regularly rotate API keys
-- Monitor logs for suspicious activity
-- Use strong, unique passwords
-
-## 📞 Support
-
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Review the logs using `./scripts/view-logs.sh`
-3. Test the script manually
-4. Verify all environment variables are set correctly
-
-Remember that this automation interacts with external services (Wizard101, TwoCaptcha, Supabase) which may have their own rate limits or service interruptions.
+Remember that this automation interacts with external services (Wizard101, TwoCaptcha, Gemini) which may have their own rate limits or service interruptions. Quiz data is stored locally in `scripts/quiz-answers.json`.

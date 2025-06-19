@@ -1,10 +1,10 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { Page } from "puppeteer";
-import path from "path";
-import dotenv from "dotenv";
-import { createClient } from "@supabase/supabase-js";
-import readline from "readline";
+import * as path from "path";
+import * as fs from "fs";
+import * as dotenv from "dotenv";
+import * as readline from "readline";
 
 // Import TwoCaptcha using the TypeScript-friendly package
 import * as TwoCaptcha from "2captcha-ts";
@@ -61,47 +61,30 @@ const globalStats = {
 // Cache for quiz answers (fetched once per script run)
 let cachedQuizAnswers: Quiz[] | null = null;
 
-// Track if quiz answers have been updated (to sync back to Supabase)
+// Track if quiz answers have been updated (to sync back to local file)
 let quizAnswersUpdated = false;
 
-// Function to fetch quiz answers from Supabase bucket
+// Function to fetch quiz answers from local file
 async function fetchQuizAnswers(): Promise<Quiz[]> {
   if (cachedQuizAnswers) {
     console.log("✅ Using cached quiz answers");
     return cachedQuizAnswers;
   }
 
-  console.log("📥 Fetching quiz answers from Supabase bucket...");
+  console.log("📥 Loading quiz answers from local file...");
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const quizAnswersPath = path.join(__dirname, "quiz-answers.json");
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error(
-        "Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
-      );
+    // Check if file exists, if not create it with empty array
+    if (!fs.existsSync(quizAnswersPath)) {
+      console.log("📄 Creating new quiz-answers.json file...");
+      fs.writeFileSync(quizAnswersPath, JSON.stringify([], null, 2));
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch the quiz-answers.json file from the bucket
-    const { data, error } = await supabase.storage
-      .from("w101-trivia")
-      .download("quiz-answers.json");
-
-    if (error) {
-      throw new Error(`Failed to fetch quiz answers: ${error.message}`);
-    }
-
-    if (!data) {
-      throw new Error("No data received from Supabase bucket");
-    }
-
-    // Convert the blob to text and parse as JSON
-    const text = await data.text();
-    const quizAnswers = JSON.parse(text) as Quiz[];
+    // Read the quiz-answers.json file
+    const fileContent = fs.readFileSync(quizAnswersPath, "utf-8");
+    const quizAnswers = JSON.parse(fileContent) as Quiz[];
 
     // Validate the data structure
     if (!Array.isArray(quizAnswers)) {
@@ -118,59 +101,39 @@ async function fetchQuizAnswers(): Promise<Quiz[]> {
     }
 
     console.log(
-      `✅ Successfully fetched ${quizAnswers.length} quizzes from Supabase bucket`
+      `✅ Successfully loaded ${quizAnswers.length} quizzes from local file`
     );
 
     // Cache the results
     cachedQuizAnswers = quizAnswers;
     return quizAnswers;
   } catch (error) {
-    console.error("❌ Error fetching quiz answers from Supabase:", error);
+    console.error("❌ Error loading quiz answers from local file:", error);
     throw error;
   }
 }
 
-// Function to update quiz answers in Supabase bucket
-async function updateQuizAnswersInSupabase(): Promise<void> {
+// Function to update quiz answers in local file
+async function updateQuizAnswersInLocalFile(): Promise<void> {
   if (!cachedQuizAnswers || !quizAnswersUpdated) {
     return;
   }
 
-  console.log("📤 Updating quiz answers in Supabase bucket...");
+  console.log("📤 Updating quiz answers in local file...");
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error(
-        "Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local"
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const quizAnswersPath = path.join(__dirname, "quiz-answers.json");
 
     // Convert quiz answers to JSON string
     const jsonData = JSON.stringify(cachedQuizAnswers, null, 2);
-    const blob = new Blob([jsonData], { type: "application/json" });
 
-    // Upload the updated file
-    const { error } = await supabase.storage
-      .from("w101-trivia")
-      .upload("quiz-answers.json", blob, {
-        upsert: true,
-        contentType: "application/json"
-      });
+    // Write the updated data to the file
+    fs.writeFileSync(quizAnswersPath, jsonData);
 
-    if (error) {
-      throw new Error(`Failed to update quiz answers: ${error.message}`);
-    }
-
-    console.log("✅ Successfully updated quiz answers in Supabase bucket");
+    console.log("✅ Successfully updated quiz answers in local file");
     quizAnswersUpdated = false;
   } catch (error) {
-    console.error("❌ Error updating quiz answers in Supabase:", error);
+    console.error("❌ Error updating quiz answers in local file:", error);
     throw error;
   }
 }
@@ -997,32 +960,32 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
                   const clickSuccess = await page.evaluate((answerDiv) => {
                     try {
                       // Try multiple selectors to find the checkbox
-                      let checkboxLink = null;
+                      let checkboxLink: HTMLElement | null = null;
 
                       // Method 1: Standard selector
                       checkboxLink = answerDiv.querySelector(
                         ".answerBox .largecheckbox"
-                      ) as HTMLElement;
+                      ) as HTMLElement | null;
 
                       // Method 2: Alternative selector
                       if (!checkboxLink) {
                         checkboxLink = answerDiv.querySelector(
                           ".largecheckbox"
-                        ) as HTMLElement;
+                        ) as HTMLElement | null;
                       }
 
                       // Method 3: By name attribute
                       if (!checkboxLink) {
                         checkboxLink = answerDiv.querySelector(
                           "a[name='checkboxtag']"
-                        ) as HTMLElement;
+                        ) as HTMLElement | null;
                       }
 
                       // Method 4: By onclick attribute
                       if (!checkboxLink) {
                         checkboxLink = answerDiv.querySelector(
                           "a[onclick*='selectQuizAnswer']"
-                        ) as HTMLElement;
+                        ) as HTMLElement | null;
                       }
 
                       if (checkboxLink) {
@@ -1485,7 +1448,7 @@ async function claimQuizReward(page: Page): Promise<void> {
 
           // Wait for the popup/iframe to load with retry logic
           console.log("⏳ Waiting for popup frame to load...");
-          let popupFrame = null;
+          let popupFrame: import("puppeteer").Frame | null = null;
           let retryCount = 0;
           const maxRetries = 5;
 
@@ -2660,14 +2623,16 @@ async function main() {
     "🤖 TwoCaptcha service will be used for automatic reCAPTCHA solving"
   );
 
-  // Fetch quiz answers from Supabase at the start
+  // Fetch quiz answers from local file at the start
   console.log("\n=== Initializing Quiz Data ===");
   try {
     const quizAnswers = await fetchQuizAnswers();
-    console.log(`📚 Loaded ${quizAnswers.length} quizzes from Supabase`);
+    console.log(`📚 Loaded ${quizAnswers.length} quizzes from local file`);
   } catch (error) {
-    console.error("❌ Failed to fetch quiz answers from Supabase:", error);
-    console.error("Please check your Supabase configuration and try again.");
+    console.error("❌ Failed to load quiz answers from local file:", error);
+    console.error(
+      "Please check that the quiz-answers.json file exists and is valid."
+    );
     process.exit(1);
   }
 
@@ -3071,14 +3036,14 @@ async function main() {
   } catch (error) {
     console.error("💥 An error occurred:", error);
   } finally {
-    // Update quiz answers in Supabase if any new answers were added (even on error)
+    // Update quiz answers in local file if any new answers were added (even on error)
     if (quizAnswersUpdated) {
-      console.log("\n📤 Final sync of quiz answers to Supabase...");
+      console.log("\n📤 Final sync of quiz answers to local file...");
       try {
-        await updateQuizAnswersInSupabase();
-        console.log("✅ Quiz answers successfully synced to Supabase");
+        await updateQuizAnswersInLocalFile();
+        console.log("✅ Quiz answers successfully synced to local file");
       } catch (error) {
-        console.error("❌ Failed to sync quiz answers to Supabase:", error);
+        console.error("❌ Failed to sync quiz answers to local file:", error);
       }
     }
 
