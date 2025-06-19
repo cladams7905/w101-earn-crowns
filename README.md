@@ -1,197 +1,241 @@
-# Wizard101 Earn Crowns - Local macOS Cron Setup
+# Wizard101 Earn Crowns - Automated Quiz Bot
 
-This directory contains scripts to run the Wizard101 earn-crowns automation locally on macOS using cron jobs.
+This is an automated bot that can earn you up to **one hundred crowns per day** in Wizard101 by completing trivia quizzes. The bot runs on your computer and can be scheduled to run automatically.
 
-## 📁 Files
+## 🎯 What This Does
 
-- **`run-earn-crowns.sh`** - Main script that runs the earn-crowns automation with logging
-- **`setup-cron.sh`** - Interactive setup script to configure your cron job
-- **`view-logs.sh`** - Log viewer script to monitor and analyze execution logs
-- **`README-CRON.md`** - This documentation file
+- Automatically logs into your Wizard101 account
+- Finds and completes trivia quizzes to earn crowns
+- Remembers quiz answers for future use
+- Can run on a schedule (like every day at a specific time)
+- Stores all data locally on your computer
 
-## 🚀 Quick Start
+## 📋 What You'll Need
 
-1. **Set up your environment variables** (if you haven't already):
+Before starting, make sure you have:
 
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your credentials
-   ```
+1. **A Wizard101 account** with login credentials
+2. **A TwoCaptcha account** (for solving captchas automatically) - [Get one here](https://2captcha.com/)
+   - **Cost:** About $1.50 per 1,000 captcha solves, minimum $3 deposit required
+   - This is necessary because Wizard101 uses captchas to prevent bots
+3. **A computer running macOS or Windows** This guide was originally built for MacOS users, but you can still run this script on Windows (see Windows setup notes below)
+4. **Optional: Google Gemini API key** (for smarter quiz answers) - [Get one here](https://aistudio.google.com/)
 
-2. **Run the interactive setup**:
+## 🚀 Step-by-Step Setup Guide
 
-   ```bash
-   ./scripts/setup-cron.sh
-   ```
+### Step 1: Install Node.js
 
-3. **Test the script manually** (optional):
+Node.js is the software that runs this bot. Here's how to install it:
 
-   ```bash
-   ./scripts/run-earn-crowns.sh
-   ```
+1. Go to [nodejs.org](https://nodejs.org/)
+2. Download the "LTS" version (the green button)
+3. Open the downloaded file and follow the installer
+4. When done, restart your computer
 
-4. **Monitor logs**:
-   ```bash
-   ./scripts/view-logs.sh
-   ```
+**To verify it worked:**
 
-## 📋 Required Environment Variables
+1. Open Terminal (press Cmd+Space, type "Terminal", press Enter)
+2. Type: `node --version`
+3. You should see something like "v20.10.0"
 
-Make sure your `.env.local` file contains:
+### Step 2: Download This Project
 
-```bash
-# Wizard101 credentials
-WIZARD101_USERNAME=your_username
-WIZARD101_PASSWORD=your_password
+1. Click the green "Code" button at the top of this page
+2. Click "Download ZIP"
+3. Unzip the file to your Desktop (or wherever you want to keep it)
+4. Rename the folder to something simple like "wizard101-bot"
 
-# TwoCaptcha for automated CAPTCHA solving
-TWO_CAPTCHA_API_KEY=your_twocaptcha_api_key
+### Step 3: Open Terminal and Navigate to the Project
 
-# Optional: Google Gemini for AI-powered quiz answers
-GEMINI_API_KEY=your_gemini_api_key
+1. Open Terminal (Cmd+Space, type "Terminal")
+2. Type: `cd Desktop/wizard101-bot` (replace with your actual folder path)
+3. Press Enter
 
-# Optional: Start date for the cron job
-CRON_START_DATE=2024-01-01
-```
+**Tip:** You can drag the folder from Finder into Terminal to get the path automatically!
 
-## 📁 Quiz Data Storage
+### Step 4: Install the Bot's Dependencies
 
-Quiz answers are automatically stored locally in `scripts/quiz-answers.json`. The script will:
-
-- Create the file automatically if it doesn't exist
-- Load existing quiz answers on startup
-- Save new quiz answers as they're discovered
-- No external database or cloud storage required
-
-## 📊 Logging
-
-### Log Locations
-
-- **Latest log**: `logs/earn-crowns_latest.log` (symlink to most recent)
-- **All logs**: `logs/earn-crowns_YYYYMMDD_HHMMSS.log`
-
-### Log Features
-
-- ✅ Timestamped entries
-- 🧹 Automatic cleanup (keeps 30 days)
-- 📈 Execution statistics
-- 🔍 Error tracking
-- 💾 System information logging
-
-### Viewing Logs
-
-```bash
-# Interactive log viewer
-./scripts/view-logs.sh
-
-# Quick commands
-tail -f logs/earn-crowns_latest.log  # Follow latest log
-cat logs/earn-crowns_latest.log      # View latest log
-grep "Error" logs/*.log              # Search for errors
-```
-
-## ⏰ Cron Schedule Examples
-
-```bash
-# Daily at 5:00 PM
-0 17 * * *
-
-# Every Monday at 2:30 PM
-30 14 * * 1
-
-# Twice daily (9 AM and 9 PM)
-0 9,21 * * *
-
-# Every hour during business hours (9 AM - 5 PM, Mon-Fri)
-0 9-17 * * 1-5
-```
-
-## 🛠 Troubleshooting
-
-### Common Issues
-
-**1. "Permission denied" errors**
-
-```bash
-chmod +x scripts/*.sh
-```
-
-**2. "Node.js not found" errors**
-
-- Install Node.js from [nodejs.org](https://nodejs.org/)
-- Or use Homebrew: `brew install node`
-
-**3. "ts-node not found" errors**
+Dependencies are extra pieces of code the bot needs to work. Install them by typing:
 
 ```bash
 npm install
 ```
 
-**4. Cron job not running**
+This might take a few minutes. You'll see lots of text scrolling by - that's normal!
 
-- Check if cron service is enabled: `sudo launchctl list | grep cron`
-- Verify cron job is added: `crontab -l`
-- Check system logs: `grep CRON /var/log/system.log`
+### Step 5: Create Your Configuration File
 
-**5. Environment variables not found**
+The bot needs your login information. Here's how to set it up:
 
-- Ensure `.env.local` exists in project root
-- Verify file permissions: `ls -la .env.local`
-- Test manually: `./scripts/run-earn-crowns.sh`
-
-### Debugging Steps
-
-1. **Test the script manually**:
-
-   ```bash
-   ./scripts/run-earn-crowns.sh
-   ```
-
-2. **Check the logs**:
-
-   ```bash
-   ./scripts/view-logs.sh
-   ```
-
-3. **Verify cron job syntax**:
-
-   ```bash
-   crontab -l
-   ```
-
-4. **Check system requirements**:
-   ```bash
-   node --version
-   npm --version
-   which node
-   which npm
-   ```
-
-### macOS-Specific Notes
-
-- **Full Disk Access**: You may need to grant Terminal or your shell full disk access in System Preferences > Security & Privacy > Privacy > Full Disk Access
-
-- **Background App Refresh**: Ensure cron/Terminal has permission to run in the background
-
-- **Sleep/Wake**: Cron jobs may not run if your Mac is asleep. Consider:
-  - Using `caffeinate` command
-  - Scheduling during active hours
-  - Using macOS's `pmset` to configure sleep behavior
-
-## 📝 Monitoring & Maintenance
-
-### Check Cron Job Status
+1. In the project folder, create a new file called `.env.local`
+2. Open it with any text editor (TextEdit works fine)
+3. Copy and paste this template:
 
 ```bash
-# View all cron jobs
-crontab -l
+# Your Wizard101 login information
+WIZARD101_USERNAME=your_wizard101_username
+WIZARD101_PASSWORD=your_wizard101_password
 
-# Check recent cron activity
-grep CRON /var/log/system.log | tail -10
+# TwoCaptcha API key for solving captchas automatically
+TWO_CAPTCHA_API_KEY=your_twocaptcha_api_key
 
-# View latest execution
-./scripts/view-logs.sh
+# Optional: Google Gemini for smarter quiz answers (get free API key at https://aistudio.google.com/)
+GEMINI_API_KEY=
+
+# Optional: When to start the cron job (leave as is)
+CRON_START_DATE=2024-01-01
 ```
+
+4. Replace the placeholder values:
+
+   - `your_wizard101_username` → Your actual Wizard101 username
+   - `your_wizard101_password` → Your actual Wizard101 password
+   - `your_twocaptcha_api_key` → Your TwoCaptcha API key
+
+5. **Optional: Set up Google Gemini for better quiz answers**
+
+   - Go to [Google AI Studio](https://aistudio.google.com/)
+   - Sign in with your Google account
+   - Click "Get API key" and create a new key
+   - Copy the API key and paste it after `GEMINI_API_KEY=` in your .env.local file
+   - This helps the bot answer quiz questions more accurately (it's free!)
+
+6. Save the file
+
+**Important:**
+
+- Don't share this file with anyone (it has your passwords!)
+- Make sure the file is named exactly `.env.local` (with the dot at the beginning)
+
+### Step 6: Test the Bot
+
+Let's make sure everything works:
+
+1. In Terminal, type: `npm run earn-crowns`
+2. Press Enter
+
+You should see the bot start up and try to log into Wizard101. If it works, you'll see messages about loading quiz data and navigating to the website.
+
+**To stop the bot:** Press Ctrl+C in Terminal
+
+## 🪟 Windows Users
+
+This bot works on Windows too! You have a few options:
+
+### Option 1: Git Bash (Recommended)
+
+1. Install [Git for Windows](https://git-scm.com/download/win) (includes Git Bash)
+2. Follow the setup guide above, but use **Git Bash** instead of Terminal
+3. All commands work the same way in Git Bash
+
+### Option 2: Windows Subsystem for Linux (WSL)
+
+1. Install [WSL](https://docs.microsoft.com/en-us/windows/wsl/install)
+2. Follow the setup guide above in your WSL terminal
+3. Works exactly like on Mac/Linux
+
+### Option 3: Command Prompt/PowerShell
+
+1. Use regular Command Prompt or PowerShell for Node.js commands (`npm install`, `npm run earn-crowns`)
+2. The bash scripts (`.sh` files) won't work directly, but you can run the bot manually
+
+### Windows-Specific Notes:
+
+- **Scheduling**: Instead of cron, use Windows Task Scheduler to run the bot automatically
+- **File paths**: Use backslashes `\` or forward slashes `/` in paths
+- **Permissions**: You might not need `chmod` commands (those are for Mac/Linux)
+
+## 🎮 How to Use the Bot
+
+### Running the Bot Manually
+
+To run the bot whenever you want:
+
+1. Open Terminal
+2. Navigate to your project: `cd Desktop/wizard101-bot`
+3. Run: `npm run earn-crowns`
+
+### Setting Up Automatic Running (Cron Job)
+
+To make the bot run automatically (like every day at 5 PM):
+
+1. In Terminal, type: `./scripts/setup-cron.sh`
+2. Follow the prompts to choose when you want it to run
+3. The bot will now run automatically at your chosen time
+
+### Viewing Logs
+
+To see what the bot has been doing:
+
+1. Type: `./scripts/view-logs.sh`
+2. This shows you the bot's activity and any problems
+
+## 📁 Quiz Data Storage
+
+The bot automatically saves quiz answers in a file called `scripts/quiz-answers.json`. This means:
+
+- The bot gets smarter over time as it learns more answers
+- All data stays on your computer (nothing is sent to external servers)
+- If you delete this file, the bot will start fresh
+
+## 🛠 Troubleshooting
+
+### "Permission denied" errors
+
+Try this in Terminal:
+
+```bash
+chmod +x scripts/*.sh
+```
+
+### "Command not found" errors
+
+This usually means Node.js isn't installed properly. Go back to Step 1.
+
+### Bot can't find the .env.local file
+
+Make sure:
+
+- The file is named exactly `.env.local` (with the dot)
+- It's in the same folder as the other project files
+- You're running Terminal from the correct folder
+
+### TwoCaptcha errors
+
+- Make sure you have money in your TwoCaptcha account
+- Double-check your API key is correct
+- TwoCaptcha sometimes has delays - this is normal
+
+### Bot gets stuck on captchas
+
+This is normal. The bot will wait for TwoCaptcha to solve them automatically. If you have the paid TwoCaptcha service, it should work within 30-60 seconds.
+
+### "Module not found" errors
+
+Try running `npm install` again in Terminal.
+
+## 🔐 Security & Safety
+
+- **Keep your .env.local file private** - it contains your passwords
+- **Don't run the bot too frequently** - Wizard101 might notice automated behavior
+- **Monitor the bot occasionally** - make sure it's working correctly
+- **Use strong passwords** - for both Wizard101 and TwoCaptcha accounts
+
+## 📞 Need Help?
+
+If you're stuck:
+
+1. **Read the error messages** - they often tell you what's wrong
+2. **Check the logs** with `./scripts/view-logs.sh`
+3. **Try running the bot manually** to see what happens
+4. **Make sure all your credentials are correct** in the .env.local file
+
+## ⚠️ Important Notes
+
+- This bot interacts with Wizard101, TwoCaptcha, and optionally Google Gemini
+- These services may have rate limits or occasional downtime
+- The bot stores all quiz data locally on your computer
+- Use responsibly and follow Wizard101's terms of service
 
 ## Disclaimer
 
