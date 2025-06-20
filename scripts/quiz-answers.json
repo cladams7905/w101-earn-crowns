@@ -46,6 +46,18 @@
       {
         "question": "Which word is spelled correctly?",
         "answer": "elucubrate"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "logorrhea"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "eudaemonic"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "euonym"
       }
     ]
   },
@@ -432,6 +444,10 @@
       {
         "question": "Which sentence below uses a comma correctly?",
         "answer": "Before you begin, let us learn to play."
+      },
+      {
+        "question": "Three periods in a row are called _________.",
+        "answer": "Ellipses"
       }
     ]
   },
@@ -982,6 +998,14 @@
       {
         "question": "What is a habitat?",
         "answer": "The natural home or environment of an animal, plant, or other organism."
+      },
+      {
+        "question": "Which of the following is NOT a habitat found on land?",
+        "answer": "Coral Reef"
+      },
+      {
+        "question": "Which continent does NOT have Grasslands?",
+        "answer": "Antarctica"
       }
     ]
   },
@@ -1036,6 +1060,18 @@
       {
         "question": "What does the heart pump?",
         "answer": "Blood"
+      },
+      {
+        "question": "What is the name of the largest artery in the body?",
+        "answer": "Aorta"
+      },
+      {
+        "question": "How many chambers does a human heart have?",
+        "answer": "4"
+      },
+      {
+        "question": "Which of the following is not a systemic artery?",
+        "answer": "Pulmonary Artery"
       }
     ]
   },
@@ -1156,6 +1192,10 @@
       {
         "question": "What is the prestigious trophy awarded by the NHL?",
         "answer": "Stanley Cup"
+      },
+      {
+        "question": "How long is a period in a professional hockey game?",
+        "answer": "Twenty Minutes"
       }
     ]
   },
@@ -1314,6 +1354,14 @@
       {
         "question": "Heed",
         "answer": "paying particular notice (as to children or helpless people)"
+      },
+      {
+        "question": "Parsimony",
+        "answer": "extreme care in spending money"
+      },
+      {
+        "question": "Censure",
+        "answer": "harsh criticism or disapproval"
       }
     ]
   },
@@ -1368,6 +1416,14 @@
       {
         "question": "Who was the first Norse god?",
         "answer": "Buri"
+      },
+      {
+        "question": "Who was the goddess of joy and peace?",
+        "answer": "Nanna"
+      },
+      {
+        "question": "Norse Mythology is the mythology from what group of people?",
+        "answer": "North Germanic"
       }
     ]
   },
@@ -2110,6 +2166,10 @@
       {
         "question": "How many portal summoning candles are in the Burial Mound?",
         "answer": "Three"
+      },
+      {
+        "question": "Who is the King of the Burrowers?",
+        "answer": "Pyat MourningSword"
       }
     ]
   },
@@ -2164,6 +2224,22 @@
       {
         "question": "What is the capital of China?",
         "answer": "Beijing"
+      },
+      {
+        "question": "What is the capital of India?",
+        "answer": "New Delhi"
+      },
+      {
+        "question": "What is the capital of Japan?",
+        "answer": "Tokyo"
+      },
+      {
+        "question": "What is the capital of Argentina?",
+        "answer": "Buenos Aires"
+      },
+      {
+        "question": "What is the capital of Czech Republic?",
+        "answer": "Prague"
       }
     ]
   }
