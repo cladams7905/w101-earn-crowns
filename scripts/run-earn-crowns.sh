@@ -64,9 +64,28 @@ cd "$PROJECT_DIR" || {
     exit 1
 }
 
+# Load nvm (Node Version Manager) if available
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+    log_with_timestamp "🔧 Loading nvm..."
+    export NVM_DIR="$HOME/.nvm"
+    source "$NVM_DIR/nvm.sh"
+    source "$NVM_DIR/bash_completion" 2>/dev/null || true
+    log_with_timestamp "✅ nvm loaded successfully"
+elif [ -d "$HOME/.nvm" ]; then
+    # Try to find and use the current Node.js version directly
+    log_with_timestamp "🔧 Setting up Node.js from nvm directory..."
+    export NVM_DIR="$HOME/.nvm"
+    NODE_VERSION=$(ls -1 "$NVM_DIR/versions/node" | tail -1)
+    if [ -n "$NODE_VERSION" ]; then
+        export PATH="$NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH"
+        log_with_timestamp "✅ Added Node.js $NODE_VERSION to PATH"
+    fi
+fi
+
 # Check if Node.js is available
 if ! command -v node &> /dev/null; then
     log_with_timestamp "❌ Error: Node.js is not installed or not in PATH"
+    log_with_timestamp "💡 Current PATH: $PATH"
     exit 1
 fi
 
