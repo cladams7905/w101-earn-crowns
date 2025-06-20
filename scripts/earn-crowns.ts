@@ -163,7 +163,7 @@ async function queryGeminiForAnswer(
       .map((answer) => `${answer}`)
       .join(", ");
 
-    const prompt = `Based on the following question, please pick the most correct answer from the selection below:
+    const prompt = `Based on the following question, please pick the most correct answer from the selection below. Respond in valid JSON format according to the example below:
 
 Question: ${question}
 

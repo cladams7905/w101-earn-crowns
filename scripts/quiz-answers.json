@@ -964,12 +964,24 @@
         "answer": "Mountains"
       },
       {
+        "question": "Which of the following is NOT part of the Ocean landscape?",
+        "answer": "Mountains"
+      },
+      {
+        "question": "How are freshwater lakes and rivers created?",
+        "answer": "Streams high in the Mountains that flow down"
+      },
+      {
         "question": "Which type of habitat can be found in all ranges of climate?",
         "answer": "Temperate Forests"
       },
       {
         "question": "The largest animal in the world, the blue whale, resides in which habitat?",
         "answer": "Ocean"
+      },
+      {
+        "question": "Which of the following is NOT a habitat?",
+        "answer": "Bottle"
       },
       {
         "question": "What habitat do frogs live in?",
@@ -1002,6 +1014,10 @@
       {
         "question": "Which of the following is NOT a habitat found on land?",
         "answer": "Coral Reef"
+      },
+      {
+        "question": "What type of plant grows in the desert?",
+        "answer": "Cactus"
       },
       {
         "question": "Which continent does NOT have Grasslands?",
@@ -1316,8 +1332,16 @@
         "answer": "a concept or idea not associated with any specific instance"
       },
       {
+        "question": "Belittle",
+        "answer": "lessen the authority, dignity, or reputation of"
+      },
+      {
         "question": "Facilitate",
         "answer": "make easier"
+      },
+      {
+        "question": "Deference",
+        "answer": "a disposition or tendency to yield to the will of others"
       },
       {
         "question": "Inadvertent",
@@ -1362,6 +1386,10 @@
       {
         "question": "Censure",
         "answer": "harsh criticism or disapproval"
+      },
+      {
+        "question": "Tangible",
+        "answer": "possible to be treated as fact"
       }
     ]
   },
@@ -1418,8 +1446,36 @@
         "answer": "Buri"
       },
       {
+        "question": "Who was the goddess of night?",
+        "answer": "Nott"
+      },
+      {
         "question": "Who was the goddess of joy and peace?",
         "answer": "Nanna"
+      },
+      {
+        "question": "Who was the goddess of prudence?",
+        "answer": "Snotra"
+      },
+      {
+        "question": "Who was the goddess of healing?",
+        "answer": "Eir"
+      },
+      {
+        "question": "Who was the god of revenge?",
+        "answer": "Vor"
+      },
+      {
+        "question": "Who was the goddess of fertility and plough??",
+        "answer": "Gefjun"
+      },
+      {
+        "question": "Who was the goddess of consolation and protection?",
+        "answer": "Hlin"
+      },
+      {
+        "question": "Who was the wife of Thor and goddess of the harvest?",
+        "answer": "Sif"
       },
       {
         "question": "Norse Mythology is the mythology from what group of people?",
