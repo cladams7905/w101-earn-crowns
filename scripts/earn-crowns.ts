@@ -160,109 +160,183 @@ async function queryGeminiForAnswer(
 
     // Construct the prompt
     const answersText = availableAnswers
-      .map((answer) => `${answer}`)
-      .join(", ");
+      .map((answer, index) => `${String.fromCharCode(65 + index)}. ${answer}`)
+      .join("\n");
 
-    const prompt = `Based on the following question, please pick the most correct answer from the selection below. Respond in valid JSON format according to the example below:
+    const prompt = `Based on the following question, please pick the most correct answer from the selection below. Respond with ONLY the text of the correct answer (not the letter, not JSON, just the answer text itself).
 
 Question: ${question}
 
-Answers: ${answersText}
+Answer choices:
+${answersText}
 
-- "question": the question.
-- "answer": the best answer from the selection provided.
+Respond with only the answer text that is most correct.`;
 
-Example response:
-
-{
-"question" : "Which word is spelled correctly?",
-"answer": "spoliator"
-}
-
-Respond only with the JSON object.`;
-
-    // Make request to Gemini 2.5 Flash API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
+    // Helper function to make API call to a specific Gemini model
+    const makeGeminiApiCall = async (modelName: string) => {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              topK: 1,
+              topP: 1,
+              maxOutputTokens: 256
             }
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 256
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Gemini API request failed: ${response.status} ${response.statusText}`
+          })
+        }
       );
-    }
 
-    const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          `Gemini API request failed: ${response.status} ${response.statusText}`
+        );
+      }
 
-    // Extract the response text
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const data = await response.json();
 
-    if (!responseText) {
-      throw new Error("No response text received from Gemini");
+      // Extract the response text
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        throw new Error("No response text received from Gemini");
+      }
+
+      return responseText;
+    };
+
+    // Try Gemini 2.5 Flash first, fallback to 1.5 Flash if it fails
+    let responseText;
+    try {
+      console.log("🤖 Trying Gemini 2.5 Flash...");
+      responseText = await makeGeminiApiCall("gemini-2.5-flash");
+      console.log("✅ Gemini 2.5 Flash succeeded");
+    } catch (flash25Error) {
+      console.log("⚠️ Gemini 2.5 Flash failed, trying 1.5 Flash fallback...");
+      console.log("📝 2.5 Flash error:", (flash25Error as Error).message);
+
+      try {
+        responseText = await makeGeminiApiCall("gemini-1.5-flash");
+        console.log("✅ Gemini 1.5 Flash fallback succeeded");
+      } catch (flash15Error) {
+        console.log("❌ Both Gemini models failed");
+        console.log("📝 1.5 Flash error:", (flash15Error as Error).message);
+        throw new Error(
+          `Both Gemini models failed - 2.5 Flash: ${
+            (flash25Error as Error).message
+          }, 1.5 Flash: ${(flash15Error as Error).message}`
+        );
+      }
     }
 
     console.log("🤖 Raw Gemini response:", responseText);
 
-    // Parse and validate the JSON response
-    let parsedResponse;
-    try {
-      // Extract JSON from response (sometimes it's wrapped in markdown)
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : responseText;
-      parsedResponse = JSON.parse(jsonString);
-    } catch (parseError) {
-      throw new Error(`Failed to parse Gemini response as JSON: ${parseError}`);
+    // Clean up the response text (remove any extra formatting, quotes, etc.)
+    let cleanedResponse = responseText.trim();
+
+    // Remove common formatting that might be added
+    cleanedResponse = cleanedResponse.replace(/^["']|["']$/g, ""); // Remove quotes
+    cleanedResponse = cleanedResponse.replace(/^[A-Z]\.\s*/, ""); // Remove "A. ", "B. ", etc.
+    cleanedResponse = cleanedResponse.replace(/^\w+:\s*/, ""); // Remove "Answer: ", etc.
+    cleanedResponse = cleanedResponse.trim();
+
+    console.log("🧹 Cleaned Gemini response:", cleanedResponse);
+
+    // Find the best matching answer from available options
+    let bestMatch = null;
+    let bestMatchScore = 0;
+
+    for (const available of availableAnswers) {
+      // Check for exact match (case insensitive)
+      if (available.toLowerCase() === cleanedResponse.toLowerCase()) {
+        bestMatch = available;
+        bestMatchScore = 1.0;
+        break;
+      }
+
+      // Check for substring matches in both directions
+      const availableLower = available.toLowerCase();
+      const responseLower = cleanedResponse.toLowerCase();
+
+      if (
+        availableLower.includes(responseLower) ||
+        responseLower.includes(availableLower)
+      ) {
+        const matchScore =
+          Math.max(
+            responseLower.length / availableLower.length,
+            availableLower.length / responseLower.length
+          ) * 0.8; // Slight penalty for partial matches
+
+        if (matchScore > bestMatchScore) {
+          bestMatch = available;
+          bestMatchScore = matchScore;
+        }
+      }
+
+      // Check for word-based similarity for more complex answers
+      const availableWords = availableLower
+        .split(/\s+/)
+        .filter((word) => word.length > 2);
+      const responseWords = responseLower
+        .split(/\s+/)
+        .filter((word) => word.length > 2);
+
+      if (availableWords.length > 0 && responseWords.length > 0) {
+        let wordMatches = 0;
+        for (const responseWord of responseWords) {
+          for (const availableWord of availableWords) {
+            if (
+              responseWord === availableWord ||
+              responseWord.includes(availableWord) ||
+              availableWord.includes(responseWord)
+            ) {
+              wordMatches++;
+              break;
+            }
+          }
+        }
+
+        const wordMatchScore =
+          (wordMatches /
+            Math.max(availableWords.length, responseWords.length)) *
+          0.7;
+        if (wordMatchScore > bestMatchScore && wordMatchScore > 0.5) {
+          bestMatch = available;
+          bestMatchScore = wordMatchScore;
+        }
+      }
     }
 
-    // Validate response format
-    if (!parsedResponse.question || !parsedResponse.answer) {
-      throw new Error(
-        "Invalid response format from Gemini - missing question or answer"
-      );
-    }
-
-    // Verify the answer is in the available options
-    const selectedAnswer = parsedResponse.answer;
-    const matchingAnswer = availableAnswers.find(
-      (available) =>
-        available.toLowerCase().includes(selectedAnswer.toLowerCase()) ||
-        selectedAnswer.toLowerCase().includes(available.toLowerCase())
-    );
-
-    if (!matchingAnswer) {
+    if (!bestMatch) {
       console.log(
-        `⚠️ Gemini selected "${selectedAnswer}" but it doesn't match available options: ${availableAnswers.join(
+        `⚠️ Gemini response "${cleanedResponse}" doesn't match any available options: ${availableAnswers.join(
           ", "
         )}`
       );
       return null;
     }
 
-    console.log(`✅ Gemini selected: "${selectedAnswer}"`);
-    return selectedAnswer;
+    console.log(
+      `✅ Gemini selected: "${cleanedResponse}" -> matched to: "${bestMatch}" (confidence: ${(
+        bestMatchScore * 100
+      ).toFixed(1)}%)`
+    );
+    return bestMatch;
   } catch (error) {
     console.error("❌ Error querying Gemini:", error);
     return null;
@@ -338,110 +412,217 @@ async function findAnswerForQuestion(
 ): Promise<{ answer: string | null; source: "database" | "gemini" | null }> {
   const normalizedQuestion = normalizeText(questionText);
 
-  // Find all questions that match (either exactly or with high similarity)
-  const matchingQuestions: { question: QuizAnswer; similarity: number }[] = [];
+  console.log(`🔍 Searching for question: "${questionText}"`);
+  console.log(`🔍 Normalized: "${normalizedQuestion}"`);
+
+  // STEP 1: Look for EXACT matches first (highest priority)
+  const exactMatches: QuizAnswer[] = [];
 
   for (const answerObj of quiz.answers) {
     const normalizedQuizQuestion = normalizeText(answerObj.question);
 
-    // Check for exact substring matching
+    // True exact match (after normalization)
+    if (normalizedQuizQuestion === normalizedQuestion) {
+      exactMatches.push(answerObj);
+      console.log(`✅ Found EXACT match: "${answerObj.question}"`);
+    }
+  }
+
+  // If we have exact matches, prioritize them
+  if (exactMatches.length > 0) {
+    console.log(
+      `🎯 Found ${exactMatches.length} exact match(es), checking answers...`
+    );
+
+    // Check which exact matches have valid answers available on the page
+    const validExactMatches = exactMatches.filter((match) => {
+      const candidateAnswer = match.answer;
+      return availableAnswers.some(
+        (available) =>
+          available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
+          candidateAnswer.toLowerCase().includes(available.toLowerCase())
+      );
+    });
+
+    if (validExactMatches.length > 0) {
+      const selectedMatch = validExactMatches[0]; // Use first valid exact match
+
+      // Find the actual available answer text that matches
+      const matchingAvailableAnswer = availableAnswers.find(
+        (available) =>
+          available
+            .toLowerCase()
+            .includes(selectedMatch.answer.toLowerCase()) ||
+          selectedMatch.answer.toLowerCase().includes(available.toLowerCase())
+      );
+
+      if (matchingAvailableAnswer) {
+        console.log(
+          `✅ Selected EXACT match answer: "${selectedMatch.answer}" -> "${matchingAvailableAnswer}"`
+        );
+        return { answer: selectedMatch.answer, source: "database" };
+      }
+    } else {
+      console.log(
+        `⚠️ Found ${exactMatches.length} exact matches but none have valid answers for current page`
+      );
+      console.log(
+        `Database answers were: ${exactMatches.map((m) => m.answer).join(", ")}`
+      );
+      console.log(`Page answers are: ${availableAnswers.join(", ")}`);
+    }
+  }
+
+  // STEP 2: Look for substring matches (medium priority)
+  const substringMatches: { question: QuizAnswer; similarity: number }[] = [];
+
+  for (const answerObj of quiz.answers) {
+    const normalizedQuizQuestion = normalizeText(answerObj.question);
+
+    // Skip if we already found this as an exact match
+    if (normalizedQuizQuestion === normalizedQuestion) {
+      continue;
+    }
+
+    // Check for substring matching
     if (
       normalizedQuizQuestion.includes(normalizedQuestion) ||
       normalizedQuestion.includes(normalizedQuizQuestion)
     ) {
-      matchingQuestions.push({ question: answerObj, similarity: 1.0 });
-    } else {
-      // Check similarity-based matching for fill-in-the-blank questions
-      const similarity = getTextSimilarity(questionText, answerObj.question);
-      if (similarity > 0.6) {
-        // 60% similarity threshold
-        matchingQuestions.push({ question: answerObj, similarity });
+      substringMatches.push({ question: answerObj, similarity: 0.9 });
+      console.log(`📝 Found substring match: "${answerObj.question}"`);
+    }
+  }
+
+  if (substringMatches.length > 0) {
+    console.log(
+      `🔍 Found ${substringMatches.length} substring match(es), checking answers...`
+    );
+
+    // Check which substring matches have valid answers
+    const validSubstringMatches = substringMatches.filter((match) => {
+      const candidateAnswer = match.question.answer;
+      return availableAnswers.some(
+        (available) =>
+          available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
+          candidateAnswer.toLowerCase().includes(available.toLowerCase())
+      );
+    });
+
+    if (validSubstringMatches.length > 0) {
+      const bestSubstringMatch = validSubstringMatches[0];
+
+      // Find the actual available answer text that matches
+      const matchingAvailableAnswer = availableAnswers.find(
+        (available) =>
+          available
+            .toLowerCase()
+            .includes(bestSubstringMatch.question.answer.toLowerCase()) ||
+          bestSubstringMatch.question.answer
+            .toLowerCase()
+            .includes(available.toLowerCase())
+      );
+
+      if (matchingAvailableAnswer) {
+        console.log(
+          `✅ Selected substring match answer: "${bestSubstringMatch.question.answer}" -> "${matchingAvailableAnswer}"`
+        );
+        return {
+          answer: bestSubstringMatch.question.answer,
+          source: "database"
+        };
       }
     }
   }
 
-  if (matchingQuestions.length === 0) {
-    console.log("❌ No matching questions found in database, trying Gemini...");
+  // STEP 3: Look for similarity-based matches (lowest priority)
+  const similarityMatches: { question: QuizAnswer; similarity: number }[] = [];
 
-    // Try Gemini as a fallback
-    const geminiAnswer = await queryGeminiForAnswer(
-      questionText,
-      availableAnswers
-    );
+  for (const answerObj of quiz.answers) {
+    const normalizedQuizQuestion = normalizeText(answerObj.question);
 
-    if (geminiAnswer) {
-      // Add the new answer to the quiz data
-      addAnswerToQuiz(quiz, questionText, geminiAnswer);
-      return { answer: geminiAnswer, source: "gemini" };
+    // Skip if we already processed this question
+    if (
+      normalizedQuizQuestion === normalizedQuestion ||
+      normalizedQuizQuestion.includes(normalizedQuestion) ||
+      normalizedQuestion.includes(normalizedQuizQuestion)
+    ) {
+      continue;
     }
 
-    return { answer: null, source: null };
-  }
-
-  // Sort by similarity (highest first)
-  matchingQuestions.sort((a, b) => b.similarity - a.similarity);
-
-  console.log(`Found ${matchingQuestions.length} matching question(s)`);
-
-  // Enhanced answer validation: Check which database answers are actually available on the page
-  const validMatches = matchingQuestions.filter((match) => {
-    const candidateAnswer = match.question.answer;
-    return availableAnswers.some(
-      (available) =>
-        available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
-        candidateAnswer.toLowerCase().includes(available.toLowerCase())
-    );
-  });
-
-  if (validMatches.length > 0) {
-    console.log(`Found ${validMatches.length} valid answer matches`);
-    const bestValidMatch = validMatches[0];
-
-    // Find the actual available answer text that matches
-    const matchingAvailableAnswer = availableAnswers.find(
-      (available) =>
-        available
-          .toLowerCase()
-          .includes(bestValidMatch.question.answer.toLowerCase()) ||
-        bestValidMatch.question.answer
-          .toLowerCase()
-          .includes(available.toLowerCase())
-    );
-
-    if (matchingAvailableAnswer) {
+    // Check similarity-based matching for fill-in-the-blank questions
+    const similarity = getTextSimilarity(questionText, answerObj.question);
+    if (similarity > 0.6) {
+      // 60% similarity threshold
+      similarityMatches.push({ question: answerObj, similarity });
       console.log(
-        `Selected validated answer "${bestValidMatch.question.answer}" - available as "${matchingAvailableAnswer}"`
+        `🔄 Found similarity match (${(similarity * 100).toFixed(1)}%): "${
+          answerObj.question
+        }"`
       );
-      console.log(
-        `Match similarity: ${(bestValidMatch.similarity * 100).toFixed(1)}%`
-      );
-      return { answer: bestValidMatch.question.answer, source: "database" };
     }
   }
 
-  // If no valid matches found, try Gemini as fallback
-  if (matchingQuestions.length > 0) {
+  if (similarityMatches.length > 0) {
     console.log(
-      `⚠️ Found ${matchingQuestions.length} question matches but no valid answers`
-    );
-    console.log(
-      `Database answers were: ${matchingQuestions
-        .map((m) => m.question.answer)
-        .join(", ")}`
-    );
-    console.log(`Page answers are: ${availableAnswers.join(", ")}`);
-    console.log("🤖 Trying Gemini as fallback...");
-
-    const geminiAnswer = await queryGeminiForAnswer(
-      questionText,
-      availableAnswers
+      `🔄 Found ${similarityMatches.length} similarity match(es), checking answers...`
     );
 
-    if (geminiAnswer) {
-      // Add the new answer to the quiz data
-      addAnswerToQuiz(quiz, questionText, geminiAnswer);
-      return { answer: geminiAnswer, source: "gemini" };
+    // Sort by similarity (highest first)
+    similarityMatches.sort((a, b) => b.similarity - a.similarity);
+
+    // Check which similarity matches have valid answers
+    const validSimilarityMatches = similarityMatches.filter((match) => {
+      const candidateAnswer = match.question.answer;
+      return availableAnswers.some(
+        (available) =>
+          available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
+          candidateAnswer.toLowerCase().includes(available.toLowerCase())
+      );
+    });
+
+    if (validSimilarityMatches.length > 0) {
+      const bestSimilarityMatch = validSimilarityMatches[0];
+
+      // Find the actual available answer text that matches
+      const matchingAvailableAnswer = availableAnswers.find(
+        (available) =>
+          available
+            .toLowerCase()
+            .includes(bestSimilarityMatch.question.answer.toLowerCase()) ||
+          bestSimilarityMatch.question.answer
+            .toLowerCase()
+            .includes(available.toLowerCase())
+      );
+
+      if (matchingAvailableAnswer) {
+        console.log(
+          `✅ Selected similarity match answer: "${
+            bestSimilarityMatch.question.answer
+          }" -> "${matchingAvailableAnswer}" (${(
+            bestSimilarityMatch.similarity * 100
+          ).toFixed(1)}%)`
+        );
+        return {
+          answer: bestSimilarityMatch.question.answer,
+          source: "database"
+        };
+      }
     }
+  }
+
+  // STEP 4: No matches found in database, try Gemini
+  console.log("❌ No matching questions found in database, trying Gemini...");
+
+  const geminiAnswer = await queryGeminiForAnswer(
+    questionText,
+    availableAnswers
+  );
+
+  if (geminiAnswer) {
+    // Add the new answer to the quiz data
+    addAnswerToQuiz(quiz, questionText, geminiAnswer);
+    return { answer: geminiAnswer, source: "gemini" };
   }
 
   return { answer: null, source: null };

@@ -58,6 +58,10 @@
       {
         "question": "Which word is spelled correctly?",
         "answer": "euonym"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "smaragdine"
       }
     ]
   },
@@ -228,6 +232,10 @@
       {
         "question": "What is the symbol for Potassium?",
         "answer": "K"
+      },
+      {
+        "question": "Which of these elements is NOT considered a Metalloid.",
+        "answer": "Sn"
       }
     ]
   },
@@ -282,6 +290,18 @@
       {
         "question": "The constellation Libra represents a",
         "answer": "Balance Scale"
+      },
+      {
+        "question": "What shape marks the Pegasus constellation?",
+        "answer": "Great Square"
+      },
+      {
+        "question": "Which is the brightest star in the Canis Major constellation?",
+        "answer": "Sirius"
+      },
+      {
+        "question": "What is the brightest star in Cygnus?",
+        "answer": "Deneb"
       }
     ]
   },
@@ -390,6 +410,14 @@
       {
         "question": "Anecdote",
         "answer": "a short account of a particular incident or event of an interesting or amusing nature, often biographical"
+      },
+      {
+        "question": "Enigma",
+        "answer": "a mystery"
+      },
+      {
+        "question": "Discern",
+        "answer": "to recognize the difference"
       }
     ]
   },
@@ -650,6 +678,14 @@
       {
         "question": "Who wrote \"Phenomenal Woman\"?",
         "answer": "Maya Angelou"
+      },
+      {
+        "question": "Who wrote The Great Gatsby?",
+        "answer": "F. Scott Fitzgerald"
+      },
+      {
+        "question": "Who wrote The Lion, The Witch and the Wardrobe?",
+        "answer": "C.S. Lewis"
       }
     ]
   },
@@ -1588,6 +1624,18 @@
       {
         "question": "Uranus has a _______ glow to it",
         "answer": "Blue"
+      },
+      {
+        "question": "Venus' atmosphere is primarily made up of what gas?",
+        "answer": "Carbon Dioxide"
+      },
+      {
+        "question": "What is the largest planet in the solar system?",
+        "answer": "Jupiter"
+      },
+      {
+        "question": "Jupiter has a ________ in its atmosphere but no solid surface.",
+        "answer": "Hurricane"
       }
     ]
   },
@@ -1804,52 +1852,6 @@
       {
         "question": "Which state is known as the \"Constitution State?\"",
         "answer": "Connecticut"
-      }
-    ]
-  },
-  {
-    "quiz": "Strange Colors Trivia",
-    "pathname": "/strange-colors-trivia",
-    "answers": [
-      {
-        "question": "\"Coquelicot\" could also be described as:",
-        "answer": "Red"
-      },
-      {
-        "question": "\"Amaranth\" could also be described as:",
-        "answer": "Pink"
-      },
-      {
-        "question": "\"Mikado\" could also be described as:",
-        "answer": "Yellow"
-      },
-      {
-        "question": "\"Smalt\" could also be described as:",
-        "answer": "Blue"
-      },
-      {
-        "question": "\"Sarcoline\" could also be described as:",
-        "answer": "Flesh"
-      },
-      {
-        "question": "\"Wenge\" could also be described as:",
-        "answer": "Brown"
-      },
-      {
-        "question": "\"Smaragdine\" could also be described as:",
-        "answer": "Green"
-      },
-      {
-        "question": "\"Cattleya\" could also be described as:",
-        "answer": "Purple"
-      },
-      {
-        "question": "\"Vermilion\" could also be described as:",
-        "answer": "Red"
-      },
-      {
-        "question": "\"Glaucous\" could also be described as:",
-        "answer": "Blue"
       }
     ]
   },
@@ -2082,92 +2084,6 @@
       {
         "question": "Loquacious",
         "answer": "talkative, chatty"
-      }
-    ]
-  },
-  {
-    "quiz": "Wizard101 Adventuring Trivia",
-    "pathname": "/wizard101-adventuring-trivia",
-    "answers": [
-      {
-        "question": "What school is the Gurtok Demon focused on?",
-        "answer": "Death"
-      },
-      {
-        "question": "An unmodified sun serpent does what?",
-        "answer": "900-1000 Fire Damage + 300 Fire Damage to entire team"
-      },
-      {
-        "question": "How long do you have to wait to join a new match after fleeing in PVP?",
-        "answer": "5 minutes"
-      },
-      {
-        "question": "In Grizzleheim, the Ravens want to bring about:",
-        "answer": "The Everwinter, to cover the world in ice"
-      },
-      {
-        "question": "What is the name of the new dance added with Khrysalis?",
-        "answer": "The bee dance"
-      },
-      {
-        "question": "What is the name of the secret society in Krokotopia",
-        "answer": "Order of the Fang"
-      },
-      {
-        "question": "Which of these is NOT a Zafaria Anchor Stone?",
-        "answer": "Rasik Anchor Stone"
-      },
-      {
-        "question": "Which of these are not a lore spell?",
-        "answer": "Fire Dragon"
-      },
-      {
-        "question": "What is unique about Falmea's Classroom?",
-        "answer": "There are scortch marks on the celing"
-      },
-      {
-        "question": "Shaka Zebu is known best as:",
-        "answer": "The Greatest Living Zebra Warrior"
-      },
-      {
-        "question": "What determines the colors of the manders in Krok?",
-        "answer": "Where they come from and their school of focus."
-      },
-      {
-        "question": "What hand does Lady Oriel hold her wand in?",
-        "answer": "Trick question, she has a sword."
-      },
-      {
-        "question": "What is the name of the book stolen from the Royal Museum?",
-        "answer": "The Krokonomicon"
-      },
-      {
-        "question": "What is Professor Falmea's favorite food?",
-        "answer": "Pasta Arribata"
-      },
-      {
-        "question": "What school is the spell Dark Nova?",
-        "answer": "Shadow"
-      },
-      {
-        "question": "Who is in the top level of the Tower of the Helephant?",
-        "answer": "Lyon Lorestriker"
-      },
-      {
-        "question": "What type of rank 8 spell is granted to Death students at level 58?",
-        "answer": "Damage + DoT"
-      },
-      {
-        "question": "Who is the Bear King of Grizzleheim?",
-        "answer": "Valgard Goldenblade"
-      },
-      {
-        "question": "What does the Time Ribbon Protect against?",
-        "answer": "Time Flux"
-      },
-      {
-        "question": "Which Aztecan ponders the Great Questions of Life?",
-        "answer": "Philosoraptor"
       }
     ]
   },
