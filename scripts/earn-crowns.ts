@@ -2817,11 +2817,21 @@ async function main() {
     process.exit(1);
   }
 
+  // Create a persistent user data directory in the project folder
+  const projectDir = process.cwd();
+  const userDataDir = path.join(projectDir, ".chrome-user-data");
+
+  // Ensure the user data directory exists
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true });
+    console.log(`📁 Created Chrome user data directory: ${userDataDir}`);
+  }
+
   // Launch browser with stealth-optimized settings
   const browser = await puppeteer.launch({
     headless: true, // Run in headless mode to avoid opening browser window
     defaultViewport: null,
-    userDataDir: "/tmp/wizard101-shared-chrome-data", // Use shared user data directory
+    userDataDir: userDataDir, // Use project-specific user data directory
     args: [
       "--no-sandbox", // Required for most environments
       "--disable-setuid-sandbox",
@@ -2839,7 +2849,9 @@ async function main() {
       "--no-default-browser-check",
       "--start-maximized",
       "--enable-experimental-web-platform-features", // Enable better cursor support
-      "--force-renderer-accessibility" // Ensure accessibility features work
+      "--force-renderer-accessibility", // Ensure accessibility features work
+      "--disable-web-security", // Help with cross-origin issues
+      "--disable-features=VizDisplayCompositor" // Better stability
     ]
   });
 
@@ -3033,6 +3045,9 @@ async function main() {
     // Enhanced login verification
     console.log("🔍 Verifying login success...");
 
+    // Wait a bit for potential redirects after login
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     // Check for common login success indicators
     const loginVerification = await page.evaluate(() => {
       // Check for logout button or user menu (indicates successful login)
@@ -3044,12 +3059,26 @@ async function main() {
       );
       const loginError = document.querySelector(".error, .alert, .warning");
 
+      // Check if still on login page
+      const isStillOnLogin =
+        !!document.querySelector("#loginUserName") ||
+        window.location.href.includes("/login") ||
+        document.title.toLowerCase().includes("login");
+
+      // Check for account-related elements that indicate login success
+      const hasAccountElements = !!document.querySelector(
+        ".account, .user, .member, .player, #account, .myaccount"
+      );
+
       return {
         hasLogoutButton: !!logoutButton,
         hasUserMenu: !!userMenu,
         hasLoginError: !!loginError,
+        isStillOnLogin,
+        hasAccountElements,
         errorText: loginError ? loginError.textContent?.trim() : null,
-        url: window.location.href
+        url: window.location.href,
+        title: document.title
       };
     });
 
@@ -3057,6 +3086,56 @@ async function main() {
 
     if (loginVerification.hasLoginError) {
       throw new Error(`Login failed: ${loginVerification.errorText}`);
+    }
+
+    if (loginVerification.isStillOnLogin) {
+      console.log("⚠️ Still appears to be on login page after login attempt");
+
+      // Check if we need to handle 2FA or additional verification
+      const additionalChecks = await page.evaluate(() => {
+        const has2FA = !!document.querySelector(
+          ".two-factor, .2fa, .verification"
+        );
+        const hasCaptcha = !!document.querySelector(".captcha, .recaptcha");
+        return { has2FA, hasCaptcha };
+      });
+
+      if (additionalChecks.has2FA || additionalChecks.hasCaptcha) {
+        throw new Error(
+          "Login requires additional verification (2FA/CAPTCHA) that cannot be automated"
+        );
+      }
+    }
+
+    // Test session persistence by making a quick request to a protected page
+    console.log("🔒 Testing session persistence...");
+    try {
+      await page.goto("https://www.wizard101.com/game/account", {
+        waitUntil: "networkidle0",
+        timeout: 10000
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const sessionTest = await page.evaluate(() => {
+        const isLoginPage =
+          !!document.querySelector("#loginUserName") ||
+          window.location.href.includes("/login");
+        return {
+          isLoginPage,
+          url: window.location.href,
+          title: document.title
+        };
+      });
+
+      if (sessionTest.isLoginPage) {
+        throw new Error("Session test failed - redirected to login page");
+      }
+
+      console.log("✅ Session persistence test passed");
+    } catch (sessionError) {
+      console.log("⚠️ Session persistence test failed:", sessionError);
+      throw new Error(`Session not properly established: ${sessionError}`);
     }
 
     // Quick wait and then navigate directly to Earn Crowns page

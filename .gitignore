@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Logs
 /logs
+
+# Chrome user data directory (for persistent browser sessions)
+/.chrome-user-data
