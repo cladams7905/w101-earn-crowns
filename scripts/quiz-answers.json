@@ -174,72 +174,6 @@
     ]
   },
   {
-    "quiz": "Chemical Elements Trivia",
-    "pathname": "/chemical-elements-trivia",
-    "answers": [
-      {
-        "question": "This element was discovered by Hans Christian Oersted in 1825.",
-        "answer": "Al"
-      },
-      {
-        "question": "This element was discovered in 1808.",
-        "answer": "B"
-      },
-      {
-        "question": "The symbol 'H' refers to which chemical element?",
-        "answer": "Hydrogen"
-      },
-      {
-        "question": "Which element has a reddish color in a gas and liquid state?",
-        "answer": "Br"
-      },
-      {
-        "question": "Most of the earth's atmosphere consists of this gas.",
-        "answer": "N"
-      },
-      {
-        "question": "The symbol 'S' refers to which chemical element?",
-        "answer": "Sulfur"
-      },
-      {
-        "question": "The symbol 'Pb' refers to which chemical element?",
-        "answer": "Lead"
-      },
-      {
-        "question": "The symbol 'Cu' refers to which chemical element?",
-        "answer": "Copper"
-      },
-      {
-        "question": "This element was discovered by Joseph Priestly and Carl Scheele in 1774.",
-        "answer": "O"
-      },
-      {
-        "question": "This element when combined with Chlorine makes table salt.",
-        "answer": "Na"
-      },
-      {
-        "question": "Which of these elements is considered a Metal.",
-        "answer": "Fe"
-      },
-      {
-        "question": "This element helps give plants the energy they need to grow.",
-        "answer": "P"
-      },
-      {
-        "question": "This element is the building block of life.",
-        "answer": "C"
-      },
-      {
-        "question": "What is the symbol for Potassium?",
-        "answer": "K"
-      },
-      {
-        "question": "Which of these elements is NOT considered a Metalloid.",
-        "answer": "Sn"
-      }
-    ]
-  },
-  {
     "quiz": "Constellations Trivia",
     "pathname": "/constellations-trivia",
     "answers": [
@@ -356,6 +290,10 @@
       {
         "question": "Where was President Abraham Lincoln assassinated?",
         "answer": "The Theatre"
+      },
+      {
+        "question": "Francis Scott Key wrote which famous piece of American history?",
+        "answer": "The Star Spangled Banner"
       }
     ]
   },
@@ -740,6 +678,26 @@
       {
         "question": "Who composed Bolero?",
         "answer": "Ravel"
+      },
+      {
+        "question": "Who composed Blue Danube?",
+        "answer": "Strauss"
+      },
+      {
+        "question": "Who composed Ode to Joy?",
+        "answer": "Beethoven"
+      },
+      {
+        "question": "Who composed Carnival of the Animals?",
+        "answer": "Saint-Saens"
+      },
+      {
+        "question": "Who composed Carmen: Les Toreadors?",
+        "answer": "Bizet"
+      },
+      {
+        "question": "Who composed Canon in D?",
+        "answer": "Pachelbel"
       }
     ]
   },
@@ -872,6 +830,14 @@
       {
         "question": "Vincent Van Gogh famously cut off which part of his body?",
         "answer": "Ear"
+      },
+      {
+        "question": "Charles Darwin came up with the theory of _________.",
+        "answer": "Evolution"
+      },
+      {
+        "question": "George Orwell was a _________.",
+        "answer": "Writer"
       }
     ]
   },
@@ -926,6 +892,18 @@
       {
         "question": "Who sings \"Bad Romance\"?",
         "answer": "Lady Gaga"
+      },
+      {
+        "question": "Who Sings \"Hey Ya!\"?",
+        "answer": "OutKast"
+      },
+      {
+        "question": "Who sings \"Hey Jude\"?",
+        "answer": "The Beatles"
+      },
+      {
+        "question": "Who sings \"Beautiful\"?",
+        "answer": "Christina Aguilera"
       }
     ]
   },
@@ -1058,6 +1036,10 @@
       {
         "question": "Which continent does NOT have Grasslands?",
         "answer": "Antarctica"
+      },
+      {
+        "question": "Which habitat is found in tropical regions?",
+        "answer": "Rainforest"
       }
     ]
   },
@@ -1248,6 +1230,26 @@
       {
         "question": "How long is a period in a professional hockey game?",
         "answer": "Twenty Minutes"
+      },
+      {
+        "question": "How long must a player stay in the penalty box for a major penalty?",
+        "answer": "Five Minutes"
+      },
+      {
+        "question": "Ice hockey is the official winter sport of what country?",
+        "answer": "Canada"
+      },
+      {
+        "question": "If the penalty stopped a clear scoring opportunity, the other team is given a chance for a __________.",
+        "answer": "Penalty Shot"
+      },
+      {
+        "question": "Which country has the most registered ice hockey players?",
+        "answer": "Canada"
+      },
+      {
+        "question": "Ice hockey is considered a ________ sport.",
+        "answer": "Full Contact"
       }
     ]
   },
@@ -2034,6 +2036,22 @@
       {
         "question": "What is the largest city in Texas population wise?",
         "answer": "Houston"
+      },
+      {
+        "question": "What is the only US state with a larger population than Texas?",
+        "answer": "California"
+      },
+      {
+        "question": "Texas comes from the Caddo word Tejas, which means what?",
+        "answer": "Friends or Allies"
+      },
+      {
+        "question": "How many cattle are estimated to exist in Texas?",
+        "answer": "14 million"
+      },
+      {
+        "question": "What large body of water is off the Texas coast?",
+        "answer": "Gulf of Mexico"
       }
     ]
   },
