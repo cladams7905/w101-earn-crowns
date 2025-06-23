@@ -17,6 +17,11 @@ on:
           - "false"
           - "true"
 
+# Global environment variables to prevent Puppeteer from downloading Chromium
+env:
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+  PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
+
 jobs:
   earn-crowns:
     runs-on: ubuntu-latest
@@ -108,10 +113,6 @@ jobs:
 
           # Run the script
           npm run earn-crowns
-        env:
-          # Puppeteer configuration for GitHub Actions
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
-          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
 
       - name: Upload logs
         if: always()
