@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { Page } from "puppeteer";
+import { Page } from "puppeteer-core";
 import * as path from "path";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
@@ -1968,7 +1968,7 @@ async function claimQuizReward(page: Page): Promise<void> {
 
           // Wait for the popup/iframe to load with retry logic
           console.log("⏳ Waiting for popup frame to load...");
-          let popupFrame: import("puppeteer").Frame | null = null;
+          let popupFrame: import("puppeteer-core").Frame | null = null;
           let retryCount = 0;
           const maxRetries = 5;
 
@@ -3180,8 +3180,73 @@ async function main() {
     `🖥️ Browser will run in ${shouldRunVisible ? "VISIBLE" : "HEADLESS"} mode`
   );
 
+  // Detect Chrome executable path for puppeteer-core
+  const getChromePath = () => {
+    // Check environment variable first (for GitHub Actions)
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    // Platform-specific Chrome paths
+    const platform = process.platform;
+
+    if (platform === "darwin") {
+      // macOS paths
+      const macPaths = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium"
+      ];
+
+      for (const chromePath of macPaths) {
+        if (fs.existsSync(chromePath)) {
+          return chromePath;
+        }
+      }
+    } else if (platform === "linux") {
+      // Linux paths
+      const linuxPaths = [
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/snap/bin/chromium"
+      ];
+
+      for (const chromePath of linuxPaths) {
+        if (fs.existsSync(chromePath)) {
+          return chromePath;
+        }
+      }
+    } else if (platform === "win32") {
+      // Windows paths
+      const windowsPaths = [
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Users\\%USERNAME%\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"
+      ];
+
+      for (const chromePath of windowsPaths) {
+        if (fs.existsSync(chromePath)) {
+          return chromePath;
+        }
+      }
+    }
+
+    throw new Error(
+      `Chrome not found on ${platform}. Please install Google Chrome or set PUPPETEER_EXECUTABLE_PATH environment variable.`
+    );
+  };
+
+  const executablePath = getChromePath();
+  console.log(`🔧 Using Chrome at: ${executablePath}`);
+
   // Launch browser with stealth-optimized settings
   const browser = await puppeteer.launch({
+    executablePath, // Required for puppeteer-core
     headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
     defaultViewport: null,
     userDataDir: userDataDir, // Use project-specific user data directory
