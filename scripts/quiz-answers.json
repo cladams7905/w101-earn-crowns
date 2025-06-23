@@ -116,6 +116,22 @@
       {
         "question": "Who was the 36th president of the United States?",
         "answer": "Lyndon B. Johnson"
+      },
+      {
+        "question": "Who was the 14th president of the United States?",
+        "answer": "Franklin Pierce"
+      },
+      {
+        "question": "Who was the 42nd president of the United States?",
+        "answer": "Bill Clinton"
+      },
+      {
+        "question": "Who was the 34th president of the United States?",
+        "answer": "Dwight D. Eisenhower"
+      },
+      {
+        "question": "Who was the 9th president of the United States?",
+        "answer": "William Henry Harrison"
       }
     ]
   },
@@ -414,6 +430,14 @@
       {
         "question": "Three periods in a row are called _________.",
         "answer": "Ellipses"
+      },
+      {
+        "question": "Which sentence below uses a comma correctly?",
+        "answer": "I love to play video games, but they are hard."
+      },
+      {
+        "question": "A semi-colon is primarily used to:",
+        "answer": "Join two connected sentences"
       }
     ]
   },
@@ -1040,6 +1064,10 @@
       {
         "question": "Which habitat is found in tropical regions?",
         "answer": "Rainforest"
+      },
+      {
+        "question": "What is the habitat that has little rain and intense sunshine?",
+        "answer": "Desert"
       }
     ]
   },
@@ -1692,6 +1720,18 @@
       {
         "question": "Which word is spelled correctly?",
         "answer": "February"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "Abyss"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "Hygiene"
+      },
+      {
+        "question": "Which word is spelled correctly?",
+        "answer": "Abbreviate"
       }
     ]
   },

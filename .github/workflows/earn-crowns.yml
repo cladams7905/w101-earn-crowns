@@ -1,0 +1,115 @@
+name: Wizard101 Earn Crowns Automation
+
+on:
+  # Run daily at 9 AM UTC
+  schedule:
+    - cron: "0 9 * * *"
+
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "Enable debug logging"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  earn-crowns:
+    runs-on: ubuntu-latest
+
+    # Timeout after 30 minutes
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chrome dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            fonts-liberation \
+            libappindicator3-1 \
+            libasound2 \
+            libatk-bridge2.0-0 \
+            libdrm2 \
+            libgtk-3-0 \
+            libnspr4 \
+            libnss3 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            xdg-utils \
+            libgbm1 \
+            libxss1
+
+      - name: Cache Chrome user data
+        uses: actions/cache@v3
+        with:
+          path: .chrome-user-data
+          key: chrome-user-data-${{ github.sha }}
+          restore-keys: |
+            chrome-user-data-
+
+      - name: Create environment file
+        run: |
+          cat > .env.local << EOF
+          WIZARD101_USERNAME=${{ secrets.WIZARD101_USERNAME }}
+          WIZARD101_PASSWORD=${{ secrets.WIZARD101_PASSWORD }}
+          TWO_CAPTCHA_API_KEY=${{ secrets.TWO_CAPTCHA_API_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          NODE_ENV=production
+          EOF
+
+      - name: Run earn crowns script
+        run: |
+          # Set debug flag if enabled
+          if [ "${{ inputs.debug }}" = "true" ]; then
+            export DEBUG=true
+          fi
+
+          # Run the script
+          npm run earn-crowns
+        env:
+          # Puppeteer configuration for GitHub Actions
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: earn-crowns-logs-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Upload quiz answers
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quiz-answers-${{ github.run_number }}
+          path: scripts/quiz-answers.json
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Earn Crowns Automation Failed',
+              body: `The earn crowns automation failed on ${new Date().toISOString()}.\n\nWorkflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['automation', 'failure']
+            })
