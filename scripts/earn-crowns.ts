@@ -3754,7 +3754,7 @@ async function main() {
     try {
       // Wait for either navigation or URL change
       await Promise.race([
-        page.waitForNavigation({ waitUntil: "networkidle0", timeout: 8000 }),
+        page.waitForNavigation({ waitUntil: "networkidle0", timeout: 4000 }),
         page.waitForFunction(
           () => window.location.href !== "https://www.wizard101.com/game",
           { timeout: 8000 }
@@ -3767,6 +3767,58 @@ async function main() {
 
     const currentUrl = page.url();
     console.log("📍 Current URL:", currentUrl);
+
+    // Save page HTML as artifact for debugging the modal structure
+    console.log("💾 Saving page HTML after login submission...");
+    try {
+      const pageHTML = await page.content();
+      const fs = require("fs");
+      const fileName = "post-login-page.html";
+      fs.writeFileSync(fileName, pageHTML);
+      console.log(`✅ Page HTML saved to ${fileName}`);
+
+      // Also save information about all frames
+      const frames = await page.frames();
+      let frameInfo = `Post-login frames analysis:\n`;
+      frameInfo += `Total frames: ${frames.length}\n\n`;
+
+      for (let i = 0; i < frames.length; i++) {
+        try {
+          const frame = frames[i];
+          const frameUrl = frame.url();
+          frameInfo += `Frame ${i}:\n`;
+          frameInfo += `  URL: ${frameUrl}\n`;
+
+          // Try to get frame content if accessible
+          try {
+            const frameContent = await frame.content();
+            frameInfo += `  Content length: ${frameContent.length} chars\n`;
+            frameInfo += `  Content preview: ${frameContent.substring(
+              0,
+              200
+            )}...\n`;
+
+            // Save frame content if it's not the main page
+            if (frameUrl !== page.url() && frameUrl !== "about:blank") {
+              const frameFileName = `post-login-frame-${i}.html`;
+              fs.writeFileSync(frameFileName, frameContent);
+              frameInfo += `  Content saved to: ${frameFileName}\n`;
+            }
+          } catch (frameAccessError) {
+            frameInfo += `  Content: Cannot access (cross-origin)\n`;
+          }
+
+          frameInfo += `\n`;
+        } catch (frameError) {
+          frameInfo += `Frame ${i}: Error accessing frame - ${frameError.message}\n\n`;
+        }
+      }
+
+      fs.writeFileSync("post-login-frames-info.txt", frameInfo);
+      console.log(`✅ Frame information saved to post-login-frames-info.txt`);
+    } catch (htmlSaveError) {
+      console.log("⚠️ Could not save page HTML:", htmlSaveError);
+    }
 
     // Enhanced login verification
     console.log("🔍 Verifying login success...");
@@ -3791,7 +3843,13 @@ async function main() {
     // Check for post-login verification challenges
     console.log("🔍 Checking for post-login verification challenges...");
 
+    // Wait longer for any modals/popups to appear after login
+    console.log("⏳ Waiting for post-login modals to appear...");
+    await new Promise((resolve) => setTimeout(resolve, 8000));
+
     const postLoginChecks = await page.evaluate(() => {
+      console.log("🔍 Starting comprehensive modal detection...");
+
       // Check for reCAPTCHA elements
       const reCaptchaElements = [
         document.querySelector(".g-recaptcha"),
@@ -3802,15 +3860,56 @@ async function main() {
         document.querySelector("iframe[title*='captcha']")
       ].filter(Boolean);
 
-      // Check for any popup/modal that might contain verification
+      // More comprehensive popup/modal detection
       const popups = [
         document.querySelector(".modal"),
         document.querySelector(".popup"),
         document.querySelector(".overlay"),
         document.querySelector("[class*='modal']"),
         document.querySelector("[class*='popup']"),
-        document.querySelector("[style*='position: fixed']")
+        document.querySelector("[style*='position: fixed']"),
+        document.querySelector("[style*='position:fixed']"),
+        // Look for any elements with z-index that might be overlays
+        ...Array.from(document.querySelectorAll("*")).filter((el) => {
+          const style = window.getComputedStyle(el);
+          return (
+            (style.position === "fixed" || style.position === "absolute") &&
+            parseInt(style.zIndex) > 100
+          );
+        })
       ].filter(Boolean);
+
+      // Check for specific modal text that appears in the screenshot
+      const modalTexts = [
+        "Please Confirm Your Account",
+        "Please prove you are not a robot",
+        "I'm not a robot"
+      ];
+
+      const foundModalTexts = modalTexts.filter((text) =>
+        document.body.textContent?.includes(text)
+      );
+
+      // Look for specific button texts
+      const buttonTexts = ["Login", "Close"];
+      const foundButtons = buttonTexts
+        .map((text) => {
+          const buttons = Array.from(
+            document.querySelectorAll(
+              "button, input[type='submit'], input[type='button']"
+            )
+          );
+          return buttons.find(
+            (btn) =>
+              (btn as HTMLElement).textContent
+                ?.toLowerCase()
+                .includes(text.toLowerCase()) ||
+              (btn as HTMLInputElement).value
+                ?.toLowerCase()
+                .includes(text.toLowerCase())
+          );
+        })
+        .filter(Boolean);
 
       // Check all iframes for potential verification content
       const iframes = Array.from(document.querySelectorAll("iframe"));
@@ -3829,9 +3928,26 @@ async function main() {
       // Check for verification-related text on page
       const pageText = document.body.textContent || "";
       const hasVerificationText =
-        /verify|verification|captcha|security check|please wait|loading/i.test(
+        /verify|verification|captcha|security check|please wait|loading|confirm.*account|prove.*robot/i.test(
           pageText
         );
+
+      // Get all elements that might be part of a modal/overlay
+      const allElementsWithText = Array.from(
+        document.querySelectorAll("*")
+      ).filter((el) => {
+        const text = el.textContent || "";
+        return modalTexts.some((modalText) => text.includes(modalText));
+      });
+
+      console.log("🔍 Modal detection results:");
+      console.log(`  • reCAPTCHA elements: ${reCaptchaElements.length}`);
+      console.log(`  • Popup elements: ${popups.length}`);
+      console.log(`  • Modal texts found: ${foundModalTexts.join(", ")}`);
+      console.log(`  • Buttons found: ${foundButtons.length}`);
+      console.log(
+        `  • Elements with modal text: ${allElementsWithText.length}`
+      );
 
       return {
         reCaptchaCount: reCaptchaElements.length,
@@ -3853,10 +3969,17 @@ async function main() {
           title: iframe.title,
           className: iframe.className
         })),
+        modalTextsFound: foundModalTexts,
+        buttonsFound: foundButtons.length,
+        elementsWithModalText: allElementsWithText.length,
         hasVerificationText,
         currentUrl: window.location.href,
         pageTitle: document.title,
-        bodyClasses: document.body.className
+        bodyClasses: document.body.className,
+        // Additional debugging info
+        totalIframes: iframes.length,
+        allIframeSrcs: iframes.map((iframe) => iframe.src || "no-src"),
+        pageTextSample: pageText.substring(0, 1000)
       };
     });
 
@@ -3870,7 +3993,10 @@ async function main() {
       postLoginChecks.reCaptchaCount > 0 ||
       postLoginChecks.popupCount > 0 ||
       postLoginChecks.suspiciousIframes.length > 0 ||
-      postLoginChecks.hasVerificationText
+      postLoginChecks.hasVerificationText ||
+      postLoginChecks.modalTextsFound.length > 0 ||
+      postLoginChecks.elementsWithModalText > 0 ||
+      postLoginChecks.totalIframes > 0 // Any iframe could contain the modal
     ) {
       console.log("⚠️ Detected potential post-login verification challenge");
       console.log(`   • reCAPTCHA elements: ${postLoginChecks.reCaptchaCount}`);
@@ -3889,6 +4015,62 @@ async function main() {
       // Check for specific "Please Confirm Your Account" modal from the screenshot
       console.log("🔍 Checking for 'Please Confirm Your Account' modal...");
 
+      // First check all frames for the modal content
+      const frames = await page.frames();
+      console.log(`📱 Checking ${frames.length} frames for modal content...`);
+
+      let modalFoundInFrame = false;
+      let modalFrame = null;
+
+      for (let i = 0; i < frames.length; i++) {
+        try {
+          const frame = frames[i];
+          const frameUrl = frame.url();
+          console.log(`📱 Frame ${i}: ${frameUrl}`);
+
+          // Check this frame for modal content
+          const frameModalCheck = await frame.evaluate(() => {
+            const modalTexts = [
+              "Please Confirm Your Account",
+              "Please prove you are not a robot",
+              "I'm not a robot"
+            ];
+
+            const foundTexts = modalTexts.filter((text) =>
+              document.body.textContent?.includes(text)
+            );
+
+            const hasReCaptcha = !!(
+              document.querySelector(".g-recaptcha") ||
+              document.querySelector("[data-sitekey]") ||
+              document.querySelector("iframe[src*='recaptcha']")
+            );
+
+            return {
+              foundTexts,
+              hasReCaptcha,
+              bodyText:
+                document.body.textContent?.substring(0, 500) || "no text"
+            };
+          });
+
+          console.log(`📱 Frame ${i} modal check:`, frameModalCheck);
+
+          if (
+            frameModalCheck.foundTexts.length > 0 ||
+            frameModalCheck.hasReCaptcha
+          ) {
+            console.log(`✅ Found modal content in frame ${i}`);
+            modalFoundInFrame = true;
+            modalFrame = frame;
+            break;
+          }
+        } catch (frameError) {
+          console.log(`⚠️ Could not access frame ${i}:`, frameError.message);
+        }
+      }
+
+      // Also check main page
       const modalCheck = await page.evaluate(() => {
         // Look for the specific modal elements visible in the screenshot
         const modalTitle = Array.from(document.querySelectorAll("*")).find(
@@ -3923,9 +4105,16 @@ async function main() {
         };
       });
 
-      console.log("🔍 Modal check results:", modalCheck);
+      console.log("🔍 Main page modal check results:", modalCheck);
+      console.log("🔍 Frame modal check results:", {
+        modalFoundInFrame,
+        frameCount: frames.length
+      });
 
-      if (modalCheck.hasModal && modalCheck.modalVisible) {
+      if (
+        (modalCheck.hasModal && modalCheck.modalVisible) ||
+        modalFoundInFrame
+      ) {
         console.log(
           "✅ Found 'Please Confirm Your Account' modal - using handleReCaptchaChallenge"
         );
