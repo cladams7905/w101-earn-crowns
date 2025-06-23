@@ -4190,9 +4190,134 @@ async function main() {
             );
           }
 
-          // Wait for the modal to close and login to complete
+          // Wait for the modal to close and login to complete with enhanced monitoring
           console.log("⏳ Waiting for modal to close and login to complete...");
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+
+          // Wait longer and monitor for changes
+          let waitTime = 0;
+          const maxWaitTime = 30000; // 30 seconds max wait
+          const checkInterval = 2000; // Check every 2 seconds
+
+          while (waitTime < maxWaitTime) {
+            await new Promise((resolve) => setTimeout(resolve, checkInterval));
+            waitTime += checkInterval;
+
+            console.log(
+              `⏳ Checking login status after ${waitTime / 1000}s...`
+            );
+
+            // Check if popup is gone and login form is no longer visible
+            const loginStatusCheck = await page.evaluate(() => {
+              // Check if login form is still visible on main page
+              const loginForm = document.querySelector("#loginUserName");
+              const isLoginFormVisible =
+                loginForm &&
+                window.getComputedStyle(loginForm).display !== "none" &&
+                window.getComputedStyle(loginForm).visibility !== "hidden";
+
+              // Check if popup/modal is still present
+              const popup = document.querySelector("#jPopFrame");
+              const isPopupVisible =
+                popup &&
+                window.getComputedStyle(popup).display !== "none" &&
+                window.getComputedStyle(popup).visibility !== "hidden";
+
+              // Check for signs of successful login
+              const hasLogoutButton = !!document.querySelector(
+                '[href*="logout"], [onclick*="logout"], .logout'
+              );
+              const hasUserMenu = !!document.querySelector(
+                ".user-menu, .user-profile, #user-menu"
+              );
+              const hasAccountElements = !!document.querySelector(
+                ".account, .user, .member, .player, #account, .myaccount"
+              );
+
+              return {
+                isLoginFormVisible,
+                isPopupVisible,
+                hasLogoutButton,
+                hasUserMenu,
+                hasAccountElements,
+                url: window.location.href,
+                title: document.title
+              };
+            });
+
+            console.log(
+              `📊 Login status check:`,
+              JSON.stringify(loginStatusCheck, null, 2)
+            );
+
+            // If popup is gone and we have signs of successful login, break
+            if (
+              !loginStatusCheck.isPopupVisible &&
+              (loginStatusCheck.hasLogoutButton ||
+                loginStatusCheck.hasUserMenu ||
+                loginStatusCheck.hasAccountElements ||
+                !loginStatusCheck.isLoginFormVisible)
+            ) {
+              console.log(
+                "✅ Login appears successful - popup closed and authentication detected"
+              );
+              break;
+            }
+
+            // If we're taking too long, log current state
+            if (waitTime >= 15000 && waitTime % 5000 === 0) {
+              console.log(
+                `⚠️ Still waiting for login completion after ${
+                  waitTime / 1000
+                }s...`
+              );
+
+              // Check frames to see if there are any error messages
+              const frames = await page.frames();
+              for (let i = 0; i < frames.length; i++) {
+                try {
+                  const frame = frames[i];
+                  const frameUrl = frame.url();
+                  if (frameUrl.includes("QuarantinedLogin")) {
+                    const frameStatus = await frame.evaluate(() => {
+                      const errorElements = document.querySelectorAll(
+                        ".error, .alert, .warning, .message"
+                      );
+                      const errors = Array.from(errorElements)
+                        .map((el) => el.textContent?.trim())
+                        .filter(Boolean);
+
+                      return {
+                        errors,
+                        bodyText:
+                          document.body.textContent?.substring(0, 200) ||
+                          "no text",
+                        hasForm: !!document.querySelector("form"),
+                        hasSubmitButton: !!document.querySelector(
+                          'input[type="submit"], button[type="submit"]'
+                        )
+                      };
+                    });
+
+                    if (frameStatus.errors.length > 0) {
+                      console.log(
+                        `❌ Errors detected in login frame:`,
+                        frameStatus.errors
+                      );
+                    } else {
+                      console.log(`📱 Login frame status:`, frameStatus);
+                    }
+                  }
+                } catch (frameError) {
+                  // Frame may be inaccessible or closed
+                  console.log(`📱 Frame ${i} no longer accessible`);
+                }
+              }
+            }
+          }
+
+          if (waitTime >= maxWaitTime) {
+            console.log("⏰ Maximum wait time reached for login completion");
+          }
         } catch (reCaptchaError) {
           console.log(
             "❌ Failed to handle reCAPTCHA in modal:",
@@ -4334,13 +4459,109 @@ async function main() {
         "⚠️ Still appears to be on login page after all verification attempts"
       );
 
-      // This indicates login wasn't actually successful
-      // The most likely cause is a reCAPTCHA challenge that appeared after login
-      console.log("🚨 Login verification failed - authentication incomplete");
-      throw new Error(
-        "Login verification failed: Still on login page after authentication attempts. " +
-          "This likely indicates a reCAPTCHA or other verification challenge that needs to be handled."
-      );
+      // Additional check: look for any hidden overlays or popups that might be blocking
+      const additionalCheck = await page.evaluate(() => {
+        // Check if login form is actually visible or just present in DOM
+        const loginForm = document.querySelector(
+          "#loginUserName"
+        ) as HTMLElement;
+        const isLoginFormActuallyVisible =
+          loginForm &&
+          window.getComputedStyle(loginForm).display !== "none" &&
+          window.getComputedStyle(loginForm).visibility !== "hidden" &&
+          loginForm.offsetParent !== null; // Element is actually rendered
+
+        // Check for any blocking overlays
+        const overlays = document.querySelectorAll(
+          '.overlay, .modal, .popup, [style*="z-index"]'
+        );
+        const hasBlockingOverlay = Array.from(overlays).some((overlay) => {
+          const style = window.getComputedStyle(overlay);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            parseInt(style.zIndex) > 100
+          );
+        });
+
+        // Check for any iframes that might be handling authentication
+        const authIframes = document.querySelectorAll(
+          'iframe[src*="auth"], iframe[src*="login"], iframe[src*="QuarantinedLogin"]'
+        );
+
+        return {
+          isLoginFormActuallyVisible,
+          hasBlockingOverlay,
+          authIframesCount: authIframes.length,
+          currentTitle: document.title,
+          currentUrl: window.location.href,
+          // Try to click outside any potential overlays to see if login form becomes visible
+          documentActiveElement: document.activeElement?.tagName || "none"
+        };
+      });
+
+      console.log("🔍 Additional login verification check:", additionalCheck);
+
+      // If login form is not actually visible or there are blocking overlays, we might be logged in
+      if (
+        !additionalCheck.isLoginFormActuallyVisible ||
+        additionalCheck.hasBlockingOverlay
+      ) {
+        console.log(
+          "✅ Login form not actually visible or blocked by overlay - may be successfully logged in"
+        );
+        console.log(
+          "🔄 Proceeding with assumption that login was successful..."
+        );
+      } else if (additionalCheck.authIframesCount > 0) {
+        console.log(
+          "⚠️ Authentication iframes still present - login may be in progress"
+        );
+        console.log(
+          "⏳ Waiting additional time for authentication to complete..."
+        );
+
+        // Wait a bit more for auth iframes to complete
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        // Re-check after waiting
+        const finalCheck = await page.evaluate(() => {
+          const loginForm = document.querySelector(
+            "#loginUserName"
+          ) as HTMLElement;
+          const isStillVisible =
+            loginForm &&
+            window.getComputedStyle(loginForm).display !== "none" &&
+            window.getComputedStyle(loginForm).visibility !== "hidden" &&
+            loginForm.offsetParent !== null;
+
+          return {
+            isStillVisible,
+            url: window.location.href,
+            title: document.title
+          };
+        });
+
+        if (finalCheck.isStillVisible) {
+          console.log(
+            "🚨 Login verification failed - authentication incomplete after extended wait"
+          );
+          throw new Error(
+            "Login verification failed: Still on login page after extended authentication attempts. " +
+              "This likely indicates a reCAPTCHA or other verification challenge that could not be resolved."
+          );
+        } else {
+          console.log(
+            "✅ Login form no longer visible after extended wait - proceeding"
+          );
+        }
+      } else {
+        console.log("🚨 Login verification failed - authentication incomplete");
+        throw new Error(
+          "Login verification failed: Still on login page after authentication attempts. " +
+            "This likely indicates a reCAPTCHA or other verification challenge that needs to be handled."
+        );
+      }
     }
 
     // Test session persistence by making a quick request to a protected page
