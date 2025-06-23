@@ -9,17 +9,29 @@ import * as readline from "readline";
 // Import TwoCaptcha using the TypeScript-friendly package
 import * as TwoCaptcha from "2captcha-ts";
 
-// Configure stealth plugin with all evasions
-const stealthPlugin = StealthPlugin();
+// Check if we're in CI environment early for stealth plugin configuration
+const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 
-// Optional: Log available and enabled evasions for debugging
-console.log("🛡️ Available stealth evasions:", [
-  ...stealthPlugin.availableEvasions
-]);
-console.log("✅ Enabled stealth evasions:", [...stealthPlugin.enabledEvasions]);
+// Configure stealth plugin - disable in CI to avoid session conflicts
+if (!isCI) {
+  const stealthPlugin = StealthPlugin();
 
-// Add stealth plugin
-puppeteer.use(stealthPlugin);
+  // Optional: Log available and enabled evasions for debugging
+  console.log("🛡️ Available stealth evasions:", [
+    ...stealthPlugin.availableEvasions
+  ]);
+  console.log("✅ Enabled stealth evasions:", [
+    ...stealthPlugin.enabledEvasions
+  ]);
+
+  // Add stealth plugin only for local environments
+  puppeteer.use(stealthPlugin);
+  console.log("🛡️ Stealth plugin enabled for local environment");
+} else {
+  console.log(
+    "🔧 Stealth plugin disabled in CI environment to avoid session conflicts"
+  );
+}
 
 // Load environment variables from .env.local
 dotenv.config({ path: path.join(process.cwd(), ".env.local") });
@@ -3170,9 +3182,7 @@ async function main() {
   const debugMode =
     process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
 
-  // Check if we're running in CI environment (GitHub Actions)
-  const isCI =
-    process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+  // isCI is already defined at the top of the file for stealth plugin configuration
 
   // Force visible mode for now since headless mode has login issues, but respect CI environment
   const forceVisible = process.env.FORCE_VISIBLE !== "false";
@@ -3314,47 +3324,65 @@ async function main() {
   try {
     const page = await browser.newPage();
 
-    // Enhanced stealth setup
-    console.log("🛡️ Setting up enhanced stealth mode...");
+    // Enhanced stealth setup (simplified for CI)
+    console.log(
+      `🛡️ Setting up ${isCI ? "simplified" : "enhanced"} stealth mode...`
+    );
 
     // Set realistic viewport
     await page.setViewport({ width: 1366, height: 768 });
 
-    // Fix cursor visibility and interaction issues
-    await page.evaluateOnNewDocument(() => {
-      // Ensure cursor is always visible and properly styled
-      const style = document.createElement("style");
-      style.textContent = `
-        * {
-          cursor: auto !important;
-        }
-        button, input[type="submit"], input[type="button"], a {
-          cursor: pointer !important;
-        }
-        body {
-          cursor: auto !important;
-        }
-      `;
-      document.head.appendChild(style);
+    // Fix cursor visibility and interaction issues (only for local environments)
+    if (!isCI) {
+      try {
+        await page.evaluateOnNewDocument(() => {
+          // Ensure cursor is always visible and properly styled
+          const style = document.createElement("style");
+          style.textContent = `
+            * {
+              cursor: auto !important;
+            }
+            button, input[type="submit"], input[type="button"], a {
+              cursor: pointer !important;
+            }
+            body {
+              cursor: auto !important;
+            }
+          `;
+          document.head.appendChild(style);
 
-      // Override any scripts that might hide the cursor
-      Object.defineProperty(document.body.style, "cursor", {
-        get: function () {
-          return "auto";
-        },
-        set: function () {
-          /* ignore attempts to hide cursor */
-        }
-      });
+          // Override any scripts that might hide the cursor
+          Object.defineProperty(document.body.style, "cursor", {
+            get: function () {
+              return "auto";
+            },
+            set: function () {
+              /* ignore attempts to hide cursor */
+            }
+          });
 
-      // Ensure mouse events work properly
-      window.addEventListener("load", () => {
-        document.body.style.cursor = "auto";
-      });
-    });
+          // Ensure mouse events work properly
+          window.addEventListener("load", () => {
+            document.body.style.cursor = "auto";
+          });
+        });
+        console.log("✅ Enhanced cursor setup applied for local environment");
+      } catch (error) {
+        console.log(
+          "⚠️ Enhanced cursor setup failed, continuing without it:",
+          error
+        );
+      }
+    } else {
+      console.log("🔧 Skipping cursor enhancement in CI environment");
+    }
 
-    // Test stealth effectiveness
-    await testStealthMode(page);
+    // Test stealth effectiveness (only for local environments)
+    if (!isCI) {
+      await testStealthMode(page);
+    } else {
+      console.log("🔧 Skipping stealth test in CI environment");
+    }
 
     // Go to main page
     console.log("🌐 Navigating to Wizard101...");
