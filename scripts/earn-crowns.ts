@@ -3411,7 +3411,29 @@ async function main() {
           console.log(
             `⚠️ This is likely because you have already taken the max number of quizzes for the day.`
           );
-          break; // Exit the loop early
+
+          // Update quiz answers in local file before exiting
+          if (quizAnswersUpdated) {
+            console.log("\n📤 Final sync of quiz answers to local file...");
+            try {
+              await updateQuizAnswersInLocalFile();
+              console.log("✅ Quiz answers successfully synced to local file");
+            } catch (error) {
+              console.error(
+                "❌ Failed to sync quiz answers to local file:",
+                error
+              );
+            }
+          }
+
+          // Close browser before exiting
+          await browser.close();
+
+          // Exit with failure status
+          console.log(
+            "💥 Exiting with failure status due to consecutive quiz failures"
+          );
+          process.exit(1);
         }
       }
 
@@ -3492,20 +3514,48 @@ async function main() {
     console.log(`${"🎊".repeat(20)}`);
   } catch (error) {
     console.error("💥 An error occurred:", error);
-  } finally {
+
+    // Determine if this is a login-related error that should cause failure
+    const errorMessage = (error as Error).message || "";
+    const isLoginError =
+      errorMessage.includes("Login failed") ||
+      errorMessage.includes("session") ||
+      errorMessage.includes("authentication") ||
+      errorMessage.includes("verification") ||
+      errorMessage.includes("Login requires") ||
+      errorMessage.includes("Session not properly established");
+
     // Update quiz answers in local file if any new answers were added (even on error)
     if (quizAnswersUpdated) {
       console.log("\n📤 Final sync of quiz answers to local file...");
       try {
         await updateQuizAnswersInLocalFile();
         console.log("✅ Quiz answers successfully synced to local file");
-      } catch (error) {
-        console.error("❌ Failed to sync quiz answers to local file:", error);
+      } catch (syncError) {
+        console.error(
+          "❌ Failed to sync quiz answers to local file:",
+          syncError
+        );
       }
     }
 
     // Close browser
     await browser.close();
+
+    // Exit with failure status for login-related errors
+    if (isLoginError) {
+      console.log(
+        "💥 Exiting with failure status due to login/authentication error"
+      );
+      process.exit(1);
+    }
+  } finally {
+    // Ensure browser is closed even if error handling fails
+    try {
+      await browser.close();
+    } catch {
+      // Browser may already be closed
+    }
   }
 }
 
