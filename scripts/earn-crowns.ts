@@ -2067,6 +2067,16 @@ async function claimQuizReward(page: Page): Promise<void> {
                     window as unknown as Record<string, unknown>
                   ).OptanonWrapperCount = 1;
 
+                  // Set consent preferences to accept all
+                  localStorage.setItem(
+                    "OptanonConsent",
+                    "isGpcEnabled=0&datestamp=Thu+Dec+26+2024+12%3A00%3A00+GMT-0500+(EST)&version=202409.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0005%3A1&AwaitingReconsent=false"
+                  );
+                  localStorage.setItem(
+                    "OptanonAlertBoxClosed",
+                    new Date().toISOString()
+                  );
+
                   // Simulate cookie consent acceptance
                   if (
                     typeof (window as unknown as Record<string, unknown>)
@@ -2088,7 +2098,22 @@ async function claimQuizReward(page: Page): Promise<void> {
                     oneTrustContainer.style.display = "none";
                   }
 
-                  console.log("✅ OneTrust cookie consent handled");
+                  // Also hide any other cookie consent popups
+                  const cookieElements = [
+                    document.getElementById("onetrust-banner-sdk"),
+                    document.querySelector('[class*="cookie-banner"]'),
+                    document.querySelector('[id*="cookie-banner"]')
+                  ].filter(Boolean);
+
+                  cookieElements.forEach((el) => {
+                    if (el) {
+                      (el as HTMLElement).style.display = "none";
+                    }
+                  });
+
+                  console.log(
+                    "✅ OneTrust cookie consent handled and localStorage set"
+                  );
                 } catch (cookieError) {
                   console.log("⚠️ OneTrust handling error:", cookieError);
                 }
@@ -3638,6 +3663,28 @@ async function main() {
       document.body.style.cursor = "auto";
     });
 
+    // Proactively handle OneTrust cookie consent on main page
+    console.log("🍪 Proactively handling cookie consent on main page...");
+    await page.evaluate(() => {
+      try {
+        // Set localStorage to indicate consent has already been given
+        localStorage.setItem(
+          "OptanonConsent",
+          "isGpcEnabled=0&datestamp=Thu+Dec+26+2024+12%3A00%3A00+GMT-0500+(EST)&version=202409.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0005%3A1&AwaitingReconsent=false"
+        );
+        localStorage.setItem("OptanonAlertBoxClosed", new Date().toISOString());
+
+        // Set window variables that OneTrust checks
+        (window as unknown as Record<string, unknown>).OnetrustActiveGroups =
+          "C0001,C0002,C0003,C0004,C0005";
+        (window as unknown as Record<string, unknown>).OptanonWrapperCount = 1;
+
+        console.log("✅ Cookie consent localStorage and window variables set");
+      } catch (cookieError) {
+        console.log("⚠️ Cookie consent setup error:", cookieError);
+      }
+    });
+
     // Add random human-like delay
     await new Promise((resolve) =>
       setTimeout(resolve, 1000 + Math.random() * 2000)
@@ -4554,6 +4601,206 @@ async function main() {
             // Wait a moment for the login button click to process
             console.log("⏳ Waiting for login button click to process...");
             await new Promise((resolve) => setTimeout(resolve, 3000));
+
+            // Check for and handle cookie consent popup that appears after login
+            console.log("🍪 Checking for cookie consent popup...");
+
+            // Look for cookie consent popup in both main page and frames
+            let cookieConsentHandled = false;
+
+            // First, try to handle cookie consent in the main page
+            const mainPageCookieResult = await page.evaluate(() => {
+              // Look for the "Accept All" button in cookie consent
+              const acceptAllSelectors = [
+                "#onetrust-accept-btn-handler",
+                'button:contains("Accept All")',
+                '[id*="accept"]',
+                '[class*="accept"]',
+                'button[id*="accept-btn"]'
+              ];
+
+              for (const selector of acceptAllSelectors) {
+                try {
+                  let element;
+                  if (selector.includes(":contains")) {
+                    // Handle :contains selector manually
+                    const buttons = Array.from(
+                      document.querySelectorAll("button")
+                    );
+                    element = buttons.find(
+                      (btn) =>
+                        btn.textContent?.toLowerCase().includes("accept all") ||
+                        btn.textContent?.toLowerCase().includes("accept")
+                    );
+                  } else {
+                    element = document.querySelector(selector);
+                  }
+
+                  if (element) {
+                    const text =
+                      (element as HTMLElement).textContent?.trim() || "";
+                    const id = (element as HTMLElement).id || "";
+                    console.log(
+                      `🍪 Found cookie consent button: text="${text}", id="${id}"`
+                    );
+
+                    // Check if it's visible
+                    const style = window.getComputedStyle(
+                      element as HTMLElement
+                    );
+                    if (
+                      style.display !== "none" &&
+                      style.visibility !== "hidden"
+                    ) {
+                      (element as HTMLElement).click();
+                      console.log(`✅ Clicked cookie consent button: ${text}`);
+                      return true;
+                    }
+                  }
+                } catch (e) {
+                  continue;
+                }
+              }
+
+              // Also look for any cookie-related popup/modal
+              const cookieModals = [
+                document.querySelector("#onetrust-banner-sdk"),
+                document.querySelector("#onetrust-consent-sdk"),
+                document.querySelector('[class*="cookie"]'),
+                document.querySelector('[id*="cookie"]')
+              ].filter(Boolean);
+
+              if (cookieModals.length > 0) {
+                console.log(
+                  `🍪 Found ${cookieModals.length} cookie-related elements`
+                );
+                return false; // Found cookie elements but couldn't click
+              }
+
+              return false;
+            });
+
+            if (mainPageCookieResult) {
+              console.log("✅ Cookie consent handled in main page");
+              cookieConsentHandled = true;
+            }
+
+            // If not handled in main page, check the quarantined frame
+            if (!cookieConsentHandled) {
+              console.log(
+                "🔍 Checking quarantined frame for cookie consent..."
+              );
+
+              const frames = await page.frames();
+              for (const frame of frames) {
+                const frameUrl = frame.url();
+                if (frameUrl.includes("QuarantinedLogin")) {
+                  try {
+                    const frameCookieResult = await frame.evaluate(() => {
+                      // Look for OneTrust cookie consent buttons in the frame
+                      const cookieButtons = [
+                        document.getElementById("onetrust-accept-btn-handler"),
+                        document.getElementById(
+                          "accept-recommended-btn-handler"
+                        ),
+                        document.querySelector('button:contains("Accept All")'),
+                        document.querySelector('[class*="accept"]'),
+                        document.querySelector('[id*="accept"]')
+                      ].filter(Boolean);
+
+                      console.log(
+                        `🍪 Found ${cookieButtons.length} cookie buttons in frame`
+                      );
+
+                      for (const button of cookieButtons) {
+                        const text =
+                          (button as HTMLElement).textContent?.trim() || "";
+                        const id = (button as HTMLElement).id || "";
+                        const className =
+                          (button as HTMLElement).className || "";
+
+                        console.log(
+                          `🍪 Frame cookie button: text="${text}", id="${id}", class="${className}"`
+                        );
+
+                        // Click Accept All or similar buttons
+                        if (
+                          text.toLowerCase().includes("accept") ||
+                          id.includes("accept") ||
+                          className.includes("accept")
+                        ) {
+                          // Check if visible
+                          const style = window.getComputedStyle(
+                            button as HTMLElement
+                          );
+                          if (
+                            style.display !== "none" &&
+                            style.visibility !== "hidden"
+                          ) {
+                            (button as HTMLElement).click();
+                            console.log(
+                              `✅ Clicked frame cookie button: ${text}`
+                            );
+                            return true;
+                          }
+                        }
+                      }
+
+                      // Alternative: Look for any visible button with "Accept" text
+                      const allButtons = Array.from(
+                        document.querySelectorAll("button")
+                      );
+                      for (const btn of allButtons) {
+                        const text = btn.textContent?.trim() || "";
+                        if (
+                          text.toLowerCase().includes("accept all") ||
+                          text.toLowerCase() === "accept"
+                        ) {
+                          const style = window.getComputedStyle(btn);
+                          if (
+                            style.display !== "none" &&
+                            style.visibility !== "hidden"
+                          ) {
+                            btn.click();
+                            console.log(
+                              `✅ Clicked generic accept button: ${text}`
+                            );
+                            return true;
+                          }
+                        }
+                      }
+
+                      return false;
+                    });
+
+                    if (frameCookieResult) {
+                      console.log(
+                        "✅ Cookie consent handled in quarantined frame"
+                      );
+                      cookieConsentHandled = true;
+                      break;
+                    }
+                  } catch (frameError) {
+                    console.log(
+                      "❌ Error handling cookies in frame:",
+                      frameError
+                    );
+                  }
+                }
+              }
+            }
+
+            if (cookieConsentHandled) {
+              console.log(
+                "🍪 Cookie consent popup handled, waiting for login to continue..."
+              );
+              // Wait for cookie consent to be processed and login to continue
+              await new Promise((resolve) => setTimeout(resolve, 3000));
+            } else {
+              console.log(
+                "ℹ️  No cookie consent popup found or already handled"
+              );
+            }
 
             // Check if the modal started closing after the button click
             const modalCheckAfterClick = await page.evaluate(() => {
