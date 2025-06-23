@@ -54,7 +54,7 @@ jobs:
             libxss1
 
       - name: Cache Chrome user data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .chrome-user-data
           key: chrome-user-data-${{ github.sha }}
@@ -83,11 +83,11 @@ jobs:
         env:
           # Puppeteer configuration for GitHub Actions
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: earn-crowns-logs-${{ github.run_number }}
           path: logs/
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload quiz answers
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: quiz-answers-${{ github.run_number }}
           path: scripts/quiz-answers.json
