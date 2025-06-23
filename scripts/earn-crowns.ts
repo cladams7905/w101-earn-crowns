@@ -3305,7 +3305,14 @@ async function main() {
         "--disable-breakpad", // Disable crash reporting
         "--disable-crashpad", // Disable crash reporting
         "--no-crash-upload", // Don't upload crashes
-        "--single-process" // Run in single process mode for stability
+        "--disable-site-isolation-trials", // Disable site isolation
+        "--disable-features=VizDisplayCompositor,VizHitTestSurfaceLayer", // Disable compositor features that can cause frame issues
+        "--disable-threaded-compositing", // Disable threaded compositing
+        "--disable-checker-imaging", // Disable checker imaging
+        "--disable-frame-rate-limit", // Remove frame rate limits
+        "--max_old_space_size=4096", // Increase memory limit
+        "--no-zygote", // Disable zygote process forking
+        "--disable-blink-features=AutomationControlled" // Additional automation hiding
       ]
     : [
         "--start-maximized",
@@ -3437,12 +3444,67 @@ async function main() {
       console.log("🔧 Skipping stealth test in CI environment");
     }
 
-    // Go to main page
+    // Go to main page with enhanced error handling for CI
     console.log("🌐 Navigating to Wizard101...");
-    await page.goto("https://www.wizard101.com/game", {
-      waitUntil: "networkidle0",
-      timeout: 30000
-    });
+
+    try {
+      // Check if page is still valid before navigation
+      if (page.isClosed()) {
+        throw new Error("Page was closed before navigation");
+      }
+
+      // Add extra stabilization for CI environments
+      if (isCI) {
+        console.log("⏳ Additional CI stabilization before navigation...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Verify page is still valid after wait
+        if (page.isClosed()) {
+          throw new Error("Page became closed during stabilization");
+        }
+      }
+
+      await page.goto("https://www.wizard101.com/game", {
+        waitUntil: isCI ? "domcontentloaded" : "networkidle0", // Use faster wait condition for CI
+        timeout: isCI ? 60000 : 30000 // Longer timeout for CI
+      });
+
+      console.log("✅ Navigation completed successfully");
+    } catch (navigationError) {
+      console.error("❌ Navigation failed:", navigationError.message);
+
+      // Try to recover with a simpler navigation approach
+      if (isCI) {
+        console.log(
+          "🔄 Attempting recovery navigation with simpler settings..."
+        );
+        try {
+          // Create a new page if the current one is problematic
+          const newPage = await browser.newPage();
+          console.log("✅ Created recovery page");
+
+          await newPage.goto("https://www.wizard101.com/game", {
+            waitUntil: "domcontentloaded",
+            timeout: 60000
+          });
+
+          // Replace the problematic page with the working one
+          await page.close();
+          // Note: We'll need to update the page reference - for now, throw to exit gracefully
+          throw new Error("Page recovery needed - please retry the workflow");
+        } catch (recoveryError) {
+          console.error(
+            "❌ Recovery navigation also failed:",
+            recoveryError.message
+          );
+          throw new Error(
+            `Navigation failed completely: ${navigationError.message} | Recovery failed: ${recoveryError.message}`
+          );
+        }
+      } else {
+        throw navigationError;
+      }
+    }
 
     // Ensure cursor is visible after page load
     await page.evaluate(() => {
