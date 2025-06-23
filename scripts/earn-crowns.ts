@@ -3146,99 +3146,449 @@ async function main() {
       console.log("⏳ Waiting for verification challenge to stabilize...");
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      // Check if there are any reCAPTCHA elements we can try to solve
-      if (postLoginChecks.reCaptchaCount > 0) {
-        console.log("🤖 Attempting to solve detected reCAPTCHA...");
+      // Look for popup/modal containing reCAPTCHA (similar to quiz reward handling)
+      console.log("🔍 Looking for reCAPTCHA popup/modal...");
 
+      // First check if there's a popup/modal that was triggered by login
+      console.log("🔍 Checking for post-login popup/modal...");
+
+      // Wait a bit longer for potential popup to appear
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Check all frames for reCAPTCHA content
+      const frames = await page.frames();
+      console.log(`📱 Found ${frames.length} frames on the page`);
+
+      // Log all frame URLs for debugging
+      for (let i = 0; i < frames.length; i++) {
         try {
-          // Look for site key in reCAPTCHA elements
-          const siteKeyCheck = await page.evaluate(() => {
-            const recaptchaEl = document.querySelector("[data-sitekey]");
-            const siteKey = recaptchaEl
-              ? recaptchaEl.getAttribute("data-sitekey")
-              : null;
+          const frameUrl = frames[i].url();
+          console.log(`📱 Frame ${i}: ${frameUrl}`);
+        } catch (e) {
+          console.log(`📱 Frame ${i}: Unable to access URL`);
+        }
+      }
 
-            // Also check for site key in script tags or other locations
-            const scripts = Array.from(document.querySelectorAll("script"));
-            let scriptSiteKey = null;
-            for (const script of scripts) {
-              const content = script.textContent || "";
-              const match = content.match(/sitekey['":\s]*['"]([^'"]+)['"]/i);
-              if (match) {
-                scriptSiteKey = match[1];
-                break;
+      let reCaptchaFrame = null;
+      let reCaptchaSiteKey = null;
+
+      // Look for frames that might contain reCAPTCHA
+      for (const frame of frames) {
+        try {
+          const frameUrl = frame.url();
+          console.log(`🔍 Checking frame: ${frameUrl}`);
+
+          if (
+            frameUrl.includes("recaptcha") ||
+            frameUrl.includes("captcha") ||
+            frameUrl.includes("verification") ||
+            frameUrl.includes("/auth/popup/") ||
+            frameUrl.includes("LoginWithCaptcha") ||
+            frameUrl.includes("fpSessionAttribute") ||
+            (frameUrl.includes("wizard101.com") && frameUrl !== page.url()) ||
+            frameUrl !== page.url() // Any iframe could potentially contain captcha
+          ) {
+            console.log("✅ Found potential reCAPTCHA frame");
+            reCaptchaFrame = frame;
+
+            // Try to find site key in this frame or main page
+            let frameCheck = await page.evaluate(() => {
+              const recaptchaEl = document.querySelector("[data-sitekey]");
+              const siteKey = recaptchaEl
+                ? recaptchaEl.getAttribute("data-sitekey")
+                : null;
+
+              // Also check for site key in script tags
+              const scripts = Array.from(document.querySelectorAll("script"));
+              let scriptSiteKey = null;
+              for (const script of scripts) {
+                const content = script.textContent || "";
+                const match = content.match(/sitekey['":\s]*['"]([^'"]+)['"]/i);
+                if (match) {
+                  scriptSiteKey = match[1];
+                  break;
+                }
+              }
+
+              // Look for reCAPTCHA checkbox that needs to be clicked
+              const reCaptchaCheckbox = document.querySelector(
+                ".recaptcha-checkbox, [role='checkbox'], .rc-anchor-checkbox, .recaptcha-checkbox-border"
+              );
+
+              return {
+                siteKey: siteKey || scriptSiteKey,
+                hasCheckbox: !!reCaptchaCheckbox,
+                url: window.location.href
+              };
+            });
+
+            // If we didn't find site key in main page, try to check inside the frame itself
+            if (!frameCheck.siteKey && frame !== page.mainFrame()) {
+              try {
+                const frameInternalCheck = await frame.evaluate(() => {
+                  const recaptchaEl = document.querySelector("[data-sitekey]");
+                  const siteKey = recaptchaEl
+                    ? recaptchaEl.getAttribute("data-sitekey")
+                    : null;
+
+                  // Also check for site key in script tags within frame
+                  const scripts = Array.from(
+                    document.querySelectorAll("script")
+                  );
+                  let scriptSiteKey = null;
+                  for (const script of scripts) {
+                    const content = script.textContent || "";
+                    const match = content.match(
+                      /sitekey['":\s]*['"]([^'"]+)['"]/i
+                    );
+                    if (match) {
+                      scriptSiteKey = match[1];
+                      break;
+                    }
+                  }
+
+                  // Look for reCAPTCHA checkbox in frame
+                  const reCaptchaCheckbox = document.querySelector(
+                    ".recaptcha-checkbox, [role='checkbox'], .rc-anchor-checkbox, .recaptcha-checkbox-border"
+                  );
+
+                  return {
+                    siteKey: siteKey || scriptSiteKey,
+                    hasCheckbox: !!reCaptchaCheckbox,
+                    url: window.location.href
+                  };
+                });
+
+                if (frameInternalCheck.siteKey) {
+                  console.log(
+                    `🔑 Found site key inside frame: ${frameInternalCheck.siteKey}`
+                  );
+                  frameCheck = frameInternalCheck;
+                }
+              } catch (frameAccessError) {
+                console.log(
+                  `⚠️ Could not access frame internals: ${frameAccessError.message}`
+                );
               }
             }
 
-            return {
-              siteKey: siteKey || scriptSiteKey,
-              url: window.location.href
-            };
+            if (frameCheck.siteKey) {
+              reCaptchaSiteKey = frameCheck.siteKey;
+              console.log(`🔑 Found site key: ${reCaptchaSiteKey}`);
+
+              // Check if this is a visible reCAPTCHA with checkbox
+              if (frameCheck.hasCheckbox) {
+                console.log("✅ Found visible reCAPTCHA with checkbox");
+
+                // Try to click the "I'm not a robot" checkbox first
+                try {
+                  console.log(
+                    "🖱️ Attempting to click 'I'm not a robot' checkbox..."
+                  );
+
+                  // Try clicking checkbox in main page first
+                  let checkboxClicked = await page.evaluate(() => {
+                    const checkboxSelectors = [
+                      ".recaptcha-checkbox",
+                      "[role='checkbox']",
+                      ".rc-anchor-checkbox",
+                      ".recaptcha-checkbox-border"
+                    ];
+
+                    for (const selector of checkboxSelectors) {
+                      const checkbox = document.querySelector(selector);
+                      if (checkbox) {
+                        console.log(
+                          `🎯 Found checkbox with selector: ${selector}`
+                        );
+                        (checkbox as HTMLElement).click();
+                        return true;
+                      }
+                    }
+                    return false;
+                  });
+
+                  // If not found in main page, try clicking in the frame
+                  if (
+                    !checkboxClicked &&
+                    reCaptchaFrame &&
+                    reCaptchaFrame !== page.mainFrame()
+                  ) {
+                    try {
+                      console.log("🔄 Trying to click checkbox in frame...");
+                      checkboxClicked = await reCaptchaFrame.evaluate(() => {
+                        const checkboxSelectors = [
+                          ".recaptcha-checkbox",
+                          "[role='checkbox']",
+                          ".rc-anchor-checkbox",
+                          ".recaptcha-checkbox-border"
+                        ];
+
+                        for (const selector of checkboxSelectors) {
+                          const checkbox = document.querySelector(selector);
+                          if (checkbox) {
+                            console.log(
+                              `🎯 Found checkbox in frame with selector: ${selector}`
+                            );
+                            (checkbox as HTMLElement).click();
+                            return true;
+                          }
+                        }
+                        return false;
+                      });
+                    } catch (frameClickError) {
+                      console.log(
+                        `⚠️ Could not click checkbox in frame: ${frameClickError.message}`
+                      );
+                    }
+                  }
+
+                  if (checkboxClicked) {
+                    console.log("✅ Successfully clicked reCAPTCHA checkbox");
+
+                    // Wait for challenge to appear
+                    console.log("⏳ Waiting for visual challenge to appear...");
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+                    // Check if visual challenge appeared (this means we need TwoCaptcha)
+                    let challengeAppeared = await page.evaluate(() => {
+                      return !!document.querySelector(
+                        ".rc-imageselect, .rc-defaultchallenge, .rc-audiochallenge"
+                      );
+                    });
+
+                    // Also check in frame if not found in main page
+                    if (
+                      !challengeAppeared &&
+                      reCaptchaFrame &&
+                      reCaptchaFrame !== page.mainFrame()
+                    ) {
+                      try {
+                        challengeAppeared = await reCaptchaFrame.evaluate(
+                          () => {
+                            return !!document.querySelector(
+                              ".rc-imageselect, .rc-defaultchallenge, .rc-audiochallenge"
+                            );
+                          }
+                        );
+                      } catch (frameChallengeError) {
+                        console.log(
+                          `⚠️ Could not check challenge in frame: ${frameChallengeError.message}`
+                        );
+                      }
+                    }
+
+                    if (challengeAppeared) {
+                      console.log(
+                        "🎯 Visual challenge appeared, using TwoCaptcha..."
+                      );
+                    } else {
+                      console.log(
+                        "✅ No visual challenge - checkbox was sufficient!"
+                      );
+                      break; // Exit the frame loop
+                    }
+                  }
+                } catch (checkboxError) {
+                  console.log("❌ Failed to click checkbox:", checkboxError);
+                }
+              }
+              break; // Found the main reCAPTCHA frame
+            }
+          }
+        } catch (frameError) {
+          console.log(`⚠️ Could not access frame: ${frameError.message}`);
+          continue;
+        }
+      }
+
+      // If we found a site key, solve with TwoCaptcha
+      if (reCaptchaSiteKey) {
+        try {
+          console.log("🤖 Using TwoCaptcha to solve reCAPTCHA...");
+
+          const TwoCaptcha = await import("2captcha-ts");
+          const solver = new TwoCaptcha.Solver(
+            process.env.TWO_CAPTCHA_API_KEY!
+          );
+
+          console.log("⏳ Submitting reCAPTCHA to TwoCaptcha...");
+          const result = await solver.recaptcha({
+            pageurl: page.url(),
+            googlekey: reCaptchaSiteKey,
+            invisible: false // This is a visible reCAPTCHA
           });
 
-          if (siteKeyCheck.siteKey) {
-            console.log(`🔑 Found site key: ${siteKeyCheck.siteKey}`);
+          console.log("✅ TwoCaptcha solved the reCAPTCHA!");
+          console.log(`📝 Token: ${result.data.substring(0, 50)}...`);
 
-            // Use TwoCaptcha to solve the reCAPTCHA
+          // Inject the token into the page
+          const injectionResult = await page.evaluate((token) => {
+            try {
+              // Set g-recaptcha-response in main page
+              const responseField = document.getElementById(
+                "g-recaptcha-response"
+              ) as HTMLTextAreaElement;
+              if (responseField) {
+                responseField.value = token;
+                responseField.innerHTML = token;
+                console.log("✅ Token set in g-recaptcha-response field");
+              }
+
+              // Look for and call callback function
+              if (typeof (window as any).reCaptchaCallback === "function") {
+                console.log("📞 Calling reCaptchaCallback...");
+                (window as any).reCaptchaCallback(token);
+                return "callback_called";
+              }
+
+              // Try to submit any forms with the token
+              const forms = document.querySelectorAll("form");
+              for (const form of forms) {
+                const submitButton = form.querySelector(
+                  "input[type='submit'], button[type='submit']"
+                );
+                if (submitButton) {
+                  console.log("🖱️ Clicking submit button...");
+                  (submitButton as HTMLElement).click();
+                  return "form_submitted";
+                }
+              }
+
+              // Look for continue/close buttons in modals
+              const continueButtons = [
+                document.querySelector("button[onclick*='continue']"),
+                document.querySelector("button[onclick*='close']"),
+                document.querySelector(".btn-continue"),
+                document.querySelector(".modal-close"),
+                document.querySelector("[data-dismiss='modal']")
+              ].filter(Boolean);
+
+              if (continueButtons.length > 0) {
+                console.log("🖱️ Clicking continue/close button...");
+                (continueButtons[0] as HTMLElement).click();
+                return "modal_closed";
+              }
+
+              return "token_injected";
+            } catch (error) {
+              return "error: " + (error as Error).message;
+            }
+          }, result.data);
+
+          console.log("🎯 reCAPTCHA injection result:", injectionResult);
+
+          // Wait for potential redirect or modal close after solving captcha
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        } catch (captchaError) {
+          console.log("❌ Failed to solve reCAPTCHA:", captchaError);
+        }
+      } else {
+        console.log("❌ Could not find reCAPTCHA site key in any frame");
+
+        // Fallback: Try using known site key for wizard101.com if we detect reCAPTCHA elements
+        if (postLoginChecks.reCaptchaCount > 0) {
+          console.log(
+            "🔄 Attempting fallback with known Wizard101 site key..."
+          );
+
+          try {
+            const knownSiteKey = "6LfUFE0UAAAAAGoVniwSC9-MtgxlzzAb5dnr9WWY";
+            console.log(`🔑 Using known site key: ${knownSiteKey}`);
+
             const TwoCaptcha = await import("2captcha-ts");
             const solver = new TwoCaptcha.Solver(
               process.env.TWO_CAPTCHA_API_KEY!
             );
 
-            console.log("⏳ Submitting reCAPTCHA to TwoCaptcha...");
+            console.log("⏳ Submitting fallback reCAPTCHA to TwoCaptcha...");
             const result = await solver.recaptcha({
-              pageurl: siteKeyCheck.url,
-              googlekey: siteKeyCheck.siteKey,
-              invisible: true
+              pageurl: page.url(),
+              googlekey: knownSiteKey,
+              invisible: false // Assume visible reCAPTCHA
             });
 
-            console.log("✅ TwoCaptcha solved the reCAPTCHA!");
+            console.log("✅ TwoCaptcha solved fallback reCAPTCHA!");
             console.log(`📝 Token: ${result.data.substring(0, 50)}...`);
 
-            // Inject the token and try to submit
-            const injectionResult = await page.evaluate((token) => {
+            // Inject the token into all possible locations
+            const fallbackInjectionResult = await page.evaluate((token) => {
               try {
-                // Set g-recaptcha-response
+                let injected = false;
+
+                // Set g-recaptcha-response in main page
                 const responseField = document.getElementById(
                   "g-recaptcha-response"
                 ) as HTMLTextAreaElement;
                 if (responseField) {
                   responseField.value = token;
                   responseField.innerHTML = token;
+                  console.log(
+                    "✅ Fallback: Token set in g-recaptcha-response field"
+                  );
+                  injected = true;
                 }
 
-                // Look for and call callback function
-                if (typeof (window as any).recaptchaCallback === "function") {
-                  (window as any).recaptchaCallback(token);
+                // Look for and call any callback functions
+                const possibleCallbacks = [
+                  "reCaptchaCallback",
+                  "recaptchaCallback",
+                  "onRecaptchaCallback",
+                  "captchaCallback"
+                ];
+
+                for (const callbackName of possibleCallbacks) {
+                  if (typeof (window as any)[callbackName] === "function") {
+                    console.log(`📞 Fallback: Calling ${callbackName}...`);
+                    (window as any)[callbackName](token);
+                    injected = true;
+                  }
                 }
 
-                // Try to submit any forms
+                // Try to submit any forms with submit buttons
                 const forms = document.querySelectorAll("form");
                 for (const form of forms) {
                   const submitButton = form.querySelector(
                     "input[type='submit'], button[type='submit']"
                   );
                   if (submitButton) {
+                    console.log("🖱️ Fallback: Clicking submit button...");
                     (submitButton as HTMLElement).click();
-                    return "form_submitted";
+                    injected = true;
                   }
                 }
 
-                return "token_injected";
+                // Look for modal close/continue buttons
+                const modalButtons = [
+                  document.querySelector("button[onclick*='continue']"),
+                  document.querySelector("button[onclick*='close']"),
+                  document.querySelector(".btn-continue"),
+                  document.querySelector(".modal-close"),
+                  document.querySelector("[data-dismiss='modal']")
+                ].filter(Boolean);
+
+                if (modalButtons.length > 0) {
+                  console.log("🖱️ Fallback: Clicking modal button...");
+                  (modalButtons[0] as HTMLElement).click();
+                  injected = true;
+                }
+
+                return injected ? "fallback_success" : "fallback_no_action";
               } catch (error) {
-                return "error: " + (error as Error).message;
+                return "fallback_error: " + (error as Error).message;
               }
             }, result.data);
 
-            console.log("🎯 reCAPTCHA injection result:", injectionResult);
+            console.log(
+              "🎯 Fallback injection result:",
+              fallbackInjectionResult
+            );
 
-            // Wait for potential redirect after solving captcha
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-          } else {
-            console.log("❌ Could not find reCAPTCHA site key");
+            // Wait for potential redirect or modal close
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+          } catch (fallbackError) {
+            console.log("❌ Fallback reCAPTCHA solve failed:", fallbackError);
           }
-        } catch (captchaError) {
-          console.log("❌ Failed to solve reCAPTCHA:", captchaError);
         }
       }
     }
