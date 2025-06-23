@@ -3046,9 +3046,204 @@ async function main() {
     console.log("🔍 Verifying login success...");
 
     // Wait a bit for potential redirects after login
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Check for common login success indicators
+    // Check for post-login verification challenges
+    console.log("🔍 Checking for post-login verification challenges...");
+
+    const postLoginChecks = await page.evaluate(() => {
+      // Check for reCAPTCHA elements
+      const reCaptchaElements = [
+        document.querySelector(".g-recaptcha"),
+        document.querySelector("#g-recaptcha-response"),
+        document.querySelector("[data-sitekey]"),
+        document.querySelector("iframe[src*='recaptcha']"),
+        document.querySelector("iframe[title*='recaptcha']"),
+        document.querySelector("iframe[title*='captcha']")
+      ].filter(Boolean);
+
+      // Check for any popup/modal that might contain verification
+      const popups = [
+        document.querySelector(".modal"),
+        document.querySelector(".popup"),
+        document.querySelector(".overlay"),
+        document.querySelector("[class*='modal']"),
+        document.querySelector("[class*='popup']"),
+        document.querySelector("[style*='position: fixed']")
+      ].filter(Boolean);
+
+      // Check all iframes for potential verification content
+      const iframes = Array.from(document.querySelectorAll("iframe"));
+      const suspiciousIframes = iframes.filter((iframe) => {
+        const src = iframe.src || "";
+        const title = iframe.title || "";
+        return (
+          src.includes("captcha") ||
+          src.includes("recaptcha") ||
+          src.includes("verification") ||
+          title.toLowerCase().includes("captcha") ||
+          title.toLowerCase().includes("verification")
+        );
+      });
+
+      // Check for verification-related text on page
+      const pageText = document.body.textContent || "";
+      const hasVerificationText =
+        /verify|verification|captcha|security check|please wait|loading/i.test(
+          pageText
+        );
+
+      return {
+        reCaptchaCount: reCaptchaElements.length,
+        reCaptchaElements: reCaptchaElements.map((el) => ({
+          tagName: el.tagName,
+          className: el.className,
+          id: el.id,
+          src: (el as any).src || "N/A"
+        })),
+        popupCount: popups.length,
+        popupElements: popups.map((el) => ({
+          tagName: el.tagName,
+          className: el.className,
+          id: el.id,
+          style: (el as HTMLElement).style.cssText
+        })),
+        suspiciousIframes: suspiciousIframes.map((iframe) => ({
+          src: iframe.src,
+          title: iframe.title,
+          className: iframe.className
+        })),
+        hasVerificationText,
+        currentUrl: window.location.href,
+        pageTitle: document.title,
+        bodyClasses: document.body.className
+      };
+    });
+
+    console.log(
+      "🔍 Post-login verification check:",
+      JSON.stringify(postLoginChecks, null, 2)
+    );
+
+    // If we detect potential verification challenges, wait longer and try to handle them
+    if (
+      postLoginChecks.reCaptchaCount > 0 ||
+      postLoginChecks.popupCount > 0 ||
+      postLoginChecks.suspiciousIframes.length > 0 ||
+      postLoginChecks.hasVerificationText
+    ) {
+      console.log("⚠️ Detected potential post-login verification challenge");
+      console.log(`   • reCAPTCHA elements: ${postLoginChecks.reCaptchaCount}`);
+      console.log(`   • Popup elements: ${postLoginChecks.popupCount}`);
+      console.log(
+        `   • Suspicious iframes: ${postLoginChecks.suspiciousIframes.length}`
+      );
+      console.log(
+        `   • Verification text: ${postLoginChecks.hasVerificationText}`
+      );
+
+      // Wait longer for verification to complete or become actionable
+      console.log("⏳ Waiting for verification challenge to stabilize...");
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // Check if there are any reCAPTCHA elements we can try to solve
+      if (postLoginChecks.reCaptchaCount > 0) {
+        console.log("🤖 Attempting to solve detected reCAPTCHA...");
+
+        try {
+          // Look for site key in reCAPTCHA elements
+          const siteKeyCheck = await page.evaluate(() => {
+            const recaptchaEl = document.querySelector("[data-sitekey]");
+            const siteKey = recaptchaEl
+              ? recaptchaEl.getAttribute("data-sitekey")
+              : null;
+
+            // Also check for site key in script tags or other locations
+            const scripts = Array.from(document.querySelectorAll("script"));
+            let scriptSiteKey = null;
+            for (const script of scripts) {
+              const content = script.textContent || "";
+              const match = content.match(/sitekey['":\s]*['"]([^'"]+)['"]/i);
+              if (match) {
+                scriptSiteKey = match[1];
+                break;
+              }
+            }
+
+            return {
+              siteKey: siteKey || scriptSiteKey,
+              url: window.location.href
+            };
+          });
+
+          if (siteKeyCheck.siteKey) {
+            console.log(`🔑 Found site key: ${siteKeyCheck.siteKey}`);
+
+            // Use TwoCaptcha to solve the reCAPTCHA
+            const TwoCaptcha = await import("2captcha-ts");
+            const solver = new TwoCaptcha.Solver(
+              process.env.TWO_CAPTCHA_API_KEY!
+            );
+
+            console.log("⏳ Submitting reCAPTCHA to TwoCaptcha...");
+            const result = await solver.recaptcha({
+              pageurl: siteKeyCheck.url,
+              googlekey: siteKeyCheck.siteKey,
+              invisible: true
+            });
+
+            console.log("✅ TwoCaptcha solved the reCAPTCHA!");
+            console.log(`📝 Token: ${result.data.substring(0, 50)}...`);
+
+            // Inject the token and try to submit
+            const injectionResult = await page.evaluate((token) => {
+              try {
+                // Set g-recaptcha-response
+                const responseField = document.getElementById(
+                  "g-recaptcha-response"
+                ) as HTMLTextAreaElement;
+                if (responseField) {
+                  responseField.value = token;
+                  responseField.innerHTML = token;
+                }
+
+                // Look for and call callback function
+                if (typeof (window as any).recaptchaCallback === "function") {
+                  (window as any).recaptchaCallback(token);
+                }
+
+                // Try to submit any forms
+                const forms = document.querySelectorAll("form");
+                for (const form of forms) {
+                  const submitButton = form.querySelector(
+                    "input[type='submit'], button[type='submit']"
+                  );
+                  if (submitButton) {
+                    (submitButton as HTMLElement).click();
+                    return "form_submitted";
+                  }
+                }
+
+                return "token_injected";
+              } catch (error) {
+                return "error: " + (error as Error).message;
+              }
+            }, result.data);
+
+            console.log("🎯 reCAPTCHA injection result:", injectionResult);
+
+            // Wait for potential redirect after solving captcha
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+          } else {
+            console.log("❌ Could not find reCAPTCHA site key");
+          }
+        } catch (captchaError) {
+          console.log("❌ Failed to solve reCAPTCHA:", captchaError);
+        }
+      }
+    }
+
+    // Re-check login status after handling potential verification
     const loginVerification = await page.evaluate(() => {
       // Check for logout button or user menu (indicates successful login)
       const logoutButton = document.querySelector(
@@ -3082,14 +3277,16 @@ async function main() {
       };
     });
 
-    console.log("🔍 Login verification:", loginVerification);
+    console.log("🔍 Final login verification:", loginVerification);
 
     if (loginVerification.hasLoginError) {
       throw new Error(`Login failed: ${loginVerification.errorText}`);
     }
 
     if (loginVerification.isStillOnLogin) {
-      console.log("⚠️ Still appears to be on login page after login attempt");
+      console.log(
+        "⚠️ Still appears to be on login page after all verification attempts"
+      );
 
       // Check if we need to handle 2FA or additional verification
       const additionalChecks = await page.evaluate(() => {
