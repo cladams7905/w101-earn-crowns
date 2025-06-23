@@ -137,6 +137,7 @@ jobs:
           name: debug-screenshots-${{ github.run_number }}
           path: |
             debug-*.png
+            debug-post-recaptcha-solution.png
             *.png
 
       - name: Upload page HTML artifacts
@@ -147,4 +148,5 @@ jobs:
           path: |
             post-login-*.html
             post-login-frames-info.txt
+            debug-quarantined-*.html
           retention-days: 30

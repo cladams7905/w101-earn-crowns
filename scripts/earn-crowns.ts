@@ -4125,6 +4125,123 @@ async function main() {
 
           console.log("✅ reCAPTCHA challenge handled successfully");
 
+          // Take a screenshot after reCAPTCHA is solved to see current state
+          console.log("📸 Taking screenshot after reCAPTCHA solution...");
+          try {
+            await page.screenshot({
+              path: "debug-post-recaptcha-solution.png",
+              fullPage: true
+            });
+            console.log(
+              "✅ Post-reCAPTCHA screenshot saved: debug-post-recaptcha-solution.png"
+            );
+          } catch (screenshotError) {
+            console.log(
+              "⚠️ Could not take post-reCAPTCHA screenshot:",
+              screenshotError
+            );
+          }
+
+          // Also save the current state of the quarantined login frame
+          console.log(
+            "💾 Saving quarantined login frame state after reCAPTCHA..."
+          );
+          try {
+            const frames = await page.frames();
+            for (let i = 0; i < frames.length; i++) {
+              const frame = frames[i];
+              const frameUrl = frame.url();
+              if (frameUrl.includes("QuarantinedLogin")) {
+                const frameContent = await frame.content();
+                const fs = require("fs");
+                fs.writeFileSync(
+                  `debug-quarantined-frame-post-recaptcha.html`,
+                  frameContent
+                );
+                console.log(
+                  `✅ Quarantined frame content saved to debug-quarantined-frame-post-recaptcha.html`
+                );
+
+                // Also get detailed state information
+                const frameState = await frame.evaluate(() => {
+                  const form = document.querySelector("form");
+                  const submitButton = document.querySelector(
+                    'input[type="submit"], button[type="submit"]'
+                  );
+                  const captchaToken = document.getElementById(
+                    "captchaToken"
+                  ) as HTMLInputElement;
+                  const gRecaptchaResponse = document.getElementById(
+                    "g-recaptcha-response"
+                  ) as HTMLTextAreaElement;
+
+                  // Look for any success/error messages
+                  const messages = Array.from(
+                    document.querySelectorAll(
+                      ".message, .error, .success, .alert"
+                    )
+                  )
+                    .map((el) => el.textContent?.trim())
+                    .filter(Boolean);
+
+                  // Check if reCAPTCHA appears to be solved
+                  const recaptchaCompleted =
+                    gRecaptchaResponse &&
+                    gRecaptchaResponse.value &&
+                    gRecaptchaResponse.value.length > 0;
+                  const captchaTokenSet =
+                    captchaToken &&
+                    captchaToken.value &&
+                    captchaToken.value.length > 0;
+
+                  // Look for any buttons that might need to be clicked
+                  const allButtons = Array.from(
+                    document.querySelectorAll(
+                      'button, input[type="submit"], input[type="button"]'
+                    )
+                  ).map((btn) => ({
+                    text:
+                      (btn as HTMLElement).textContent?.trim() ||
+                      (btn as HTMLInputElement).value ||
+                      "",
+                    type: (btn as HTMLInputElement).type || "button",
+                    id: (btn as HTMLElement).id || "",
+                    className: (btn as HTMLElement).className || "",
+                    onclick: (btn as HTMLElement).getAttribute("onclick") || "",
+                    disabled: (btn as HTMLInputElement).disabled || false
+                  }));
+
+                  return {
+                    hasForm: !!form,
+                    hasSubmitButton: !!submitButton,
+                    captchaTokenValue: captchaToken?.value || "not found",
+                    gRecaptchaResponseValue:
+                      gRecaptchaResponse?.value?.substring(0, 50) + "..." ||
+                      "not found",
+                    recaptchaCompleted,
+                    captchaTokenSet,
+                    messages,
+                    allButtons,
+                    bodyText:
+                      document.body.textContent?.substring(0, 500) + "..." ||
+                      "no text"
+                  };
+                });
+
+                console.log(
+                  "🔍 Quarantined frame state after reCAPTCHA:",
+                  JSON.stringify(frameState, null, 2)
+                );
+                break;
+              }
+            }
+          } catch (frameError) {
+            console.log(
+              "⚠️ Could not save quarantined frame state:",
+              frameError
+            );
+          }
+
           // After solving reCAPTCHA, try to click the Login button in the modal
           console.log("🖱️ Looking for Login button in the modal...");
 
