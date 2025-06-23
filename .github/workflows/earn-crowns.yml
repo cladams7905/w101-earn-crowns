@@ -149,4 +149,5 @@ jobs:
             post-login-*.html
             post-login-frames-info.txt
             debug-quarantined-*.html
+            debug-*-after-recaptcha-success.html
           retention-days: 30

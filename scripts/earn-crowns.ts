@@ -4243,64 +4243,326 @@ async function main() {
           }
 
           // After solving reCAPTCHA, try to click the Login button in the modal
-          console.log("🖱️ Looking for Login button in the modal...");
+          console.log("🖱️ Looking for the green Login button in the modal...");
 
-          const loginButtonClicked = await page.evaluate(() => {
-            const loginSelectors = [
-              'button[onclick*="login"]',
-              'input[value*="Login"]',
-              'button:contains("Login")',
-              '[class*="login"]',
-              // Generic button selectors that might be the login button
-              'button[type="submit"]',
-              'input[type="submit"]'
-            ];
+          // First, capture the HTML of the quarantined frame after reCAPTCHA success
+          console.log(
+            "💾 Capturing quarantined frame HTML after reCAPTCHA success..."
+          );
+          const frames = await page.frames();
 
-            for (const selector of loginSelectors) {
+          for (const frame of frames) {
+            const frameUrl = frame.url();
+            if (frameUrl.includes("QuarantinedLogin")) {
               try {
-                const element = document.querySelector(selector);
-                if (
-                  element &&
-                  (element as HTMLElement).textContent
-                    ?.toLowerCase()
-                    .includes("login")
-                ) {
-                  (element as HTMLElement).click();
-                  console.log(
-                    `🎯 Clicked login button with selector: ${selector}`
+                const frameContentAfterRecaptcha = await frame.content();
+                const fs = require("fs");
+                fs.writeFileSync(
+                  "debug-quarantined-frame-after-recaptcha-success.html",
+                  frameContentAfterRecaptcha
+                );
+                console.log(
+                  "✅ Quarantined frame HTML saved to debug-quarantined-frame-after-recaptcha-success.html"
+                );
+
+                // Also get a detailed analysis of the frame content
+                const frameAnalysis = await frame.evaluate(() => {
+                  // Get all interactive elements
+                  const buttons = Array.from(
+                    document.querySelectorAll(
+                      'button, input[type="submit"], input[type="button"], a[onclick]'
+                    )
                   );
+                  const inputs = Array.from(document.querySelectorAll("input"));
+                  const forms = Array.from(document.querySelectorAll("form"));
+
+                  const buttonDetails = buttons.map((btn, index) => ({
+                    index,
+                    tagName: btn.tagName,
+                    type: (btn as HTMLInputElement).type || "N/A",
+                    text: (btn as HTMLElement).textContent?.trim() || "",
+                    value: (btn as HTMLInputElement).value || "",
+                    id: (btn as HTMLElement).id || "",
+                    className: (btn as HTMLElement).className || "",
+                    onclick: (btn as HTMLElement).getAttribute("onclick") || "",
+                    disabled: (btn as HTMLInputElement).disabled || false,
+                    style: (btn as HTMLElement).getAttribute("style") || "",
+                    outerHTML:
+                      (btn as HTMLElement).outerHTML.substring(0, 200) + "..."
+                  }));
+
+                  const inputDetails = inputs.map((input, index) => ({
+                    index,
+                    id: input.id || "",
+                    name: input.name || "",
+                    type: input.type || "",
+                    value: input.value
+                      ? input.value.substring(0, 50) + "..."
+                      : "",
+                    className: input.className || ""
+                  }));
+
+                  // Check for any success/completion indicators
+                  const recaptchaStatus = {
+                    gRecaptchaResponse:
+                      (
+                        document.getElementById(
+                          "g-recaptcha-response"
+                        ) as HTMLTextAreaElement
+                      )?.value || "not found",
+                    captchaToken:
+                      (
+                        document.getElementById(
+                          "captchaToken"
+                        ) as HTMLInputElement
+                      )?.value || "not found",
+                    recaptchaElement: !!document.querySelector(".g-recaptcha"),
+                    recaptchaCompleted:
+                      !!document.querySelector(".g-recaptcha") &&
+                      !!(
+                        document.getElementById(
+                          "g-recaptcha-response"
+                        ) as HTMLTextAreaElement
+                      )?.value
+                  };
+
+                  return {
+                    url: window.location.href,
+                    title: document.title,
+                    buttonCount: buttons.length,
+                    buttonDetails,
+                    inputCount: inputs.length,
+                    inputDetails,
+                    formCount: forms.length,
+                    recaptchaStatus,
+                    bodyText:
+                      document.body.textContent?.substring(0, 300) + "..."
+                  };
+                });
+
+                console.log(
+                  "🔍 Detailed frame analysis after reCAPTCHA success:"
+                );
+                console.log(JSON.stringify(frameAnalysis, null, 2));
+
+                break;
+              } catch (frameError) {
+                console.log(
+                  "❌ Error capturing quarantined frame HTML:",
+                  frameError
+                );
+              }
+            }
+          }
+
+          // Now proceed with login button detection
+          let loginButtonClicked = false;
+
+          for (const frame of frames) {
+            const frameUrl = frame.url();
+            if (frameUrl.includes("QuarantinedLogin")) {
+              console.log(
+                "🎯 Found quarantined login frame, looking for Login button..."
+              );
+
+              try {
+                // Enhanced login button detection within the quarantined frame
+                loginButtonClicked = await frame.evaluate(() => {
+                  console.log(
+                    "🔍 Searching for login button in quarantined frame..."
+                  );
+
+                  // First, let's get all buttons and analyze them
+                  const allButtons = Array.from(
+                    document.querySelectorAll(
+                      'button, input[type="submit"], input[type="button"], a'
+                    )
+                  );
+                  console.log(
+                    `📋 Found ${allButtons.length} buttons/clickable elements`
+                  );
+
+                  allButtons.forEach((btn, index) => {
+                    const text =
+                      (btn as HTMLElement).textContent?.trim() ||
+                      (btn as HTMLInputElement).value ||
+                      "";
+                    const className = (btn as HTMLElement).className || "";
+                    const id = (btn as HTMLElement).id || "";
+                    const onclick =
+                      (btn as HTMLElement).getAttribute("onclick") || "";
+                    console.log(
+                      `Button ${index}: text="${text}", class="${className}", id="${id}", onclick="${onclick}"`
+                    );
+                  });
+
+                  // Look for the green Login button specifically
+                  const loginButtonSelectors = [
+                    // Look for buttons with "Login" text
+                    '*[contains(text(), "Login")]',
+                    'button:contains("Login")',
+                    'input[value="Login"]',
+                    // Look for buttons with login-related classes or styling
+                    ".login-button",
+                    ".btn-login",
+                    '[class*="login"]',
+                    // Look for green-styled buttons (common for login)
+                    '[style*="green"]',
+                    '[class*="green"]',
+                    // Generic submit buttons
+                    'button[type="submit"]',
+                    'input[type="submit"]',
+                    // Any button in the modal
+                    "button",
+                    'input[type="button"]'
+                  ];
+
+                  // Try text-based search first (most reliable)
+                  for (const btn of allButtons) {
+                    const text =
+                      (btn as HTMLElement).textContent?.trim() ||
+                      (btn as HTMLInputElement).value ||
+                      "";
+                    if (text.toLowerCase() === "login") {
+                      console.log(
+                        `🎯 Found exact "Login" text button: ${text}`
+                      );
+                      (btn as HTMLElement).click();
+                      return true;
+                    }
+                  }
+
+                  // Try case-insensitive text search
+                  for (const btn of allButtons) {
+                    const text =
+                      (btn as HTMLElement).textContent?.trim() ||
+                      (btn as HTMLInputElement).value ||
+                      "";
+                    if (text.toLowerCase().includes("login")) {
+                      console.log(`🎯 Found login-containing button: ${text}`);
+                      (btn as HTMLElement).click();
+                      return true;
+                    }
+                  }
+
+                  // Try submit buttons (the green button might be a submit button)
+                  for (const btn of allButtons) {
+                    if (
+                      (btn as HTMLInputElement).type === "submit" ||
+                      (btn as HTMLElement).tagName.toLowerCase() === "button"
+                    ) {
+                      const text =
+                        (btn as HTMLElement).textContent?.trim() ||
+                        (btn as HTMLInputElement).value ||
+                        "";
+                      console.log(`🎯 Trying submit/button: ${text}`);
+                      (btn as HTMLElement).click();
+                      return true;
+                    }
+                  }
+
+                  // Last resort: click any button (since there should only be Close and Login)
+                  if (allButtons.length > 0) {
+                    // Skip the first button if it's likely "Close", try the second one
+                    const buttonToClick =
+                      allButtons.length > 1 ? allButtons[1] : allButtons[0];
+                    const text =
+                      (buttonToClick as HTMLElement).textContent?.trim() ||
+                      (buttonToClick as HTMLInputElement).value ||
+                      "";
+                    console.log(`🎯 Last resort - clicking button: ${text}`);
+                    (buttonToClick as HTMLElement).click();
+                    return true;
+                  }
+
+                  console.log("❌ No suitable login button found");
+                  return false;
+                });
+
+                if (loginButtonClicked) {
+                  console.log(
+                    "✅ Successfully clicked Login button in quarantined frame"
+                  );
+                  break;
+                } else {
+                  console.log(
+                    "❌ Could not find or click Login button in quarantined frame"
+                  );
+                }
+              } catch (frameError) {
+                console.log(
+                  "❌ Error clicking login button in frame:",
+                  frameError
+                );
+              }
+
+              break; // Found the quarantined frame, don't check others
+            }
+          }
+
+          // Fallback: try clicking login button in main page if frame method failed
+          if (!loginButtonClicked) {
+            console.log(
+              "🔄 Fallback: Looking for login button in main page..."
+            );
+
+            loginButtonClicked = await page.evaluate(() => {
+              const buttons = Array.from(
+                document.querySelectorAll(
+                  'button, input[type="submit"], input[type="button"]'
+                )
+              );
+              for (const button of buttons) {
+                const text =
+                  (button as HTMLElement).textContent?.trim() ||
+                  (button as HTMLInputElement).value ||
+                  "";
+                if (text.toLowerCase().includes("login")) {
+                  console.log(`🎯 Main page: Clicked login button: ${text}`);
+                  (button as HTMLElement).click();
                   return true;
                 }
-              } catch (e) {
-                // Try next selector
-                continue;
               }
-            }
-
-            // Alternative: Look for any button near the reCAPTCHA that might be the submit button
-            const buttons = Array.from(
-              document.querySelectorAll('button, input[type="submit"]')
-            );
-            for (const button of buttons) {
-              const text =
-                (button as HTMLElement).textContent ||
-                (button as HTMLInputElement).value ||
-                "";
-              if (
-                text.toLowerCase().includes("login") ||
-                text.toLowerCase().includes("submit")
-              ) {
-                (button as HTMLElement).click();
-                console.log(`🎯 Clicked login/submit button: ${text}`);
-                return true;
-              }
-            }
-
-            return false;
-          });
+              return false;
+            });
+          }
 
           if (loginButtonClicked) {
             console.log("✅ Successfully clicked Login button in modal");
+
+            // Wait a moment for the login button click to process
+            console.log("⏳ Waiting for login button click to process...");
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+
+            // Check if the modal started closing after the button click
+            const modalCheckAfterClick = await page.evaluate(() => {
+              const popup = document.querySelector("#jPopFrame");
+              const isPopupStillVisible =
+                popup &&
+                window.getComputedStyle(popup).display !== "none" &&
+                window.getComputedStyle(popup).visibility !== "hidden";
+
+              return {
+                isPopupStillVisible,
+                currentUrl: window.location.href,
+                title: document.title
+              };
+            });
+
+            console.log(
+              "🔍 Modal state after Login button click:",
+              modalCheckAfterClick
+            );
+
+            if (!modalCheckAfterClick.isPopupStillVisible) {
+              console.log(
+                "🎉 Modal appears to be closing/closed after Login button click!"
+              );
+            } else {
+              console.log(
+                "⚠️ Modal still visible after Login button click - may need additional steps"
+              );
+            }
           } else {
             console.log(
               "⚠️ Could not find or click Login button - modal may close automatically"
