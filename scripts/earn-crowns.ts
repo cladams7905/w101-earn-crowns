@@ -3289,7 +3289,7 @@ async function main() {
     "--no-default-browser-check"
   ];
 
-  // Add CI-specific arguments - minimal and stable
+  // Add CI-specific arguments - minimal and stable with stealth enhancements
   const ciArgs = isCI
     ? [
         "--disable-gpu", // Required for headless mode in CI
@@ -3300,7 +3300,9 @@ async function main() {
         "--disable-renderer-backgrounding",
         "--disable-features=TranslateUI,VizDisplayCompositor",
         "--memory-pressure-off",
-        "--max_old_space_size=4096"
+        "--max_old_space_size=4096",
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", // Use realistic Windows user agent
+        "--accept-lang=en-US,en;q=0.9" // Add language preferences
       ]
     : [
         "--start-maximized",
@@ -3438,6 +3440,66 @@ async function main() {
     console.log(
       `🛡️ Setting up ${isCI ? "simplified" : "enhanced"} stealth mode...`
     );
+
+    // Add basic stealth measures for CI environment
+    if (isCI) {
+      try {
+        await page.evaluateOnNewDocument(() => {
+          // Remove webdriver property
+          Object.defineProperty(navigator, "webdriver", {
+            get: () => undefined
+          });
+
+          // Override the plugins property to use a non-empty array
+          Object.defineProperty(navigator, "plugins", {
+            get: () => [1, 2, 3, 4, 5]
+          });
+
+          // Override the languages property to use a more realistic array
+          Object.defineProperty(navigator, "languages", {
+            get: () => ["en-US", "en"]
+          });
+
+          // Override the permissions query to avoid detection
+          const originalQuery = window.navigator.permissions.query;
+          window.navigator.permissions.query = (parameters) =>
+            parameters.name === "notifications"
+              ? Promise.resolve({ state: Notification.permission } as any)
+              : originalQuery(parameters);
+
+          // Make chrome object available
+          (window as any).chrome = {
+            app: {
+              isInstalled: false
+            },
+            webstore: {
+              onInstallStageChanged: {},
+              onDownloadProgress: {}
+            },
+            runtime: {
+              onConnect: {},
+              onMessage: {}
+            }
+          };
+
+          // Override the console.debug to hide automation traces
+          const originalConsoleDebug = console.debug;
+          console.debug = function (...args) {
+            if (
+              args.length > 0 &&
+              typeof args[0] === "string" &&
+              args[0].includes("DevTools")
+            ) {
+              return;
+            }
+            return originalConsoleDebug.apply(console, args);
+          };
+        });
+        console.log("✅ Basic stealth measures applied for CI environment");
+      } catch (stealthError) {
+        console.log("⚠️ CI stealth setup failed:", stealthError);
+      }
+    }
 
     // Set realistic viewport (skip for CI since we set defaultViewport)
     if (!isCI) {
