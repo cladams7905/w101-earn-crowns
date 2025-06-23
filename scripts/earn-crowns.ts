@@ -3374,9 +3374,18 @@ async function main() {
     console.log(`📁 Created Chrome user data directory: ${userDataDir}`);
   }
 
+  // Check if debug mode is enabled
+  const debugMode =
+    process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
+
+  console.log(`🔧 Debug mode: ${debugMode ? "ENABLED" : "DISABLED"}`);
+  console.log(
+    `🖥️ Browser will run in ${debugMode ? "VISIBLE" : "HEADLESS"} mode`
+  );
+
   // Launch browser with stealth-optimized settings
   const browser = await puppeteer.launch({
-    headless: true, // Run in headless mode to avoid opening browser window
+    headless: !debugMode, // Run with visible browser if debug mode is enabled
     defaultViewport: null,
     userDataDir: userDataDir, // Use project-specific user data directory
     args: [
@@ -3398,7 +3407,14 @@ async function main() {
       "--enable-experimental-web-platform-features", // Enable better cursor support
       "--force-renderer-accessibility", // Ensure accessibility features work
       "--disable-web-security", // Help with cross-origin issues
-      "--disable-features=VizDisplayCompositor" // Better stability
+      "--disable-features=VizDisplayCompositor", // Better stability
+      ...(debugMode
+        ? [
+            "--disable-dev-shm-usage", // Extra stability for visible mode
+            "--disable-extensions-except",
+            "--disable-plugins-discovery"
+          ]
+        : [])
     ]
   });
 
@@ -3593,7 +3609,21 @@ async function main() {
     console.log("🔍 Verifying login success...");
 
     // Wait a bit for potential redirects after login
+    console.log("⏳ Waiting for post-login redirects and page changes...");
     await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // Take a screenshot if in debug mode
+    if (debugMode) {
+      try {
+        await page.screenshot({
+          path: "debug-post-login.png",
+          fullPage: true
+        });
+        console.log("📸 Debug screenshot saved: debug-post-login.png");
+      } catch (screenshotError) {
+        console.log("⚠️ Could not take debug screenshot:", screenshotError);
+      }
+    }
 
     // Check for post-login verification challenges
     console.log("🔍 Checking for post-login verification challenges...");
@@ -4175,6 +4205,52 @@ async function main() {
     });
 
     console.log("🔍 Final login verification:", loginVerification);
+
+    // Enhanced debugging in debug mode
+    if (debugMode) {
+      console.log("🔍 Enhanced debug info for login verification:");
+
+      const debugInfo = await page.evaluate(() => {
+        return {
+          pageTitle: document.title,
+          currentUrl: window.location.href,
+          bodyClasses: document.body.className,
+          hasLoginForm: !!document.querySelector("#loginUserName"),
+          hasPasswordField: !!document.querySelector("#loginPassword"),
+          hasSubmitButton: !!document.querySelector(
+            '#wizardLoginButton input[type="submit"]'
+          ),
+          loginFormVisible: (() => {
+            const form = document.querySelector("#loginUserName");
+            if (!form) return false;
+            const style = window.getComputedStyle(form);
+            return style.display !== "none" && style.visibility !== "hidden";
+          })(),
+          allFormsCount: document.querySelectorAll("form").length,
+          allInputsCount: document.querySelectorAll("input").length,
+          pageText:
+            document.body.textContent?.substring(0, 500) || "No text found"
+        };
+      });
+
+      console.log("🔍 Page debug info:", JSON.stringify(debugInfo, null, 2));
+
+      // Take another screenshot for comparison
+      try {
+        await page.screenshot({
+          path: "debug-login-verification.png",
+          fullPage: true
+        });
+        console.log(
+          "📸 Login verification screenshot saved: debug-login-verification.png"
+        );
+      } catch (screenshotError) {
+        console.log(
+          "⚠️ Could not take login verification screenshot:",
+          screenshotError
+        );
+      }
+    }
 
     if (loginVerification.hasLoginError) {
       throw new Error(`Login failed: ${loginVerification.errorText}`);

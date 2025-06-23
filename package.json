@@ -1,22 +1,33 @@
 {
   "name": "w101-earn-crowns",
   "version": "0.1.0",
-  "private": true,
+  "description": "Wizard101 automated crown earning through quiz completion",
+  "main": "scripts/earn-crowns.ts",
   "scripts": {
     "earn-crowns": "tsx scripts/earn-crowns.ts",
-    "setup-cron": "./scripts/setup-cron.sh",
-    "view-logs": "./scripts/view-logs.sh"
+    "debug": "DEBUG_MODE=true tsx scripts/earn-crowns.ts",
+    "setup-cron": "chmod +x scripts/setup-cron.sh && ./scripts/setup-cron.sh",
+    "view-logs": "chmod +x scripts/view-logs.sh && ./scripts/view-logs.sh"
   },
   "dependencies": {
-    "2captcha-ts": "^2.4.1",
-    "dotenv": "^16.5.0",
-    "puppeteer": "^24.10.2",
+    "2captcha-ts": "^1.1.2",
+    "dotenv": "^16.3.1",
+    "puppeteer": "^21.5.2",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "tsx": "^4.6.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "tsx": "^4.20.3",
-    "typescript": "^5"
-  }
+    "@types/node": "^20.9.0",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "wizard101",
+    "automation",
+    "crowns",
+    "quiz",
+    "puppeteer"
+  ],
+  "author": "",
+  "license": "MIT"
 }

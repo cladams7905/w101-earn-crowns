@@ -155,6 +155,19 @@ To run the bot whenever you want:
 2. Navigate to your project: `cd Desktop/wizard101-bot`
 3. Run: `npm run earn-crowns`
 
+### Debug Mode (Troubleshooting)
+
+If the bot isn't working properly, you can run it in debug mode to see what's happening:
+
+1. Run: `npm run debug`
+2. This will:
+   - Open a visible Chrome browser window so you can see what the bot is doing
+   - Take screenshots at important steps (saved as `debug-*.png` files)
+   - Show more detailed information in the terminal
+   - Help you identify issues like login problems or reCAPTCHA challenges
+
+**Note:** Debug mode is slower and shows the browser window, so only use it for troubleshooting.
+
 ### Setting Up Automatic Running (Cron Job)
 
 To make the bot run automatically (like every day at 5 PM):

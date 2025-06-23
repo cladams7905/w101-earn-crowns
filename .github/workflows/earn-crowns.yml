@@ -1,4 +1,4 @@
-name: Wizard101 Earn Crowns Automation
+name: Earn Crowns Daily
 
 on:
   # Run daily at 9 AM UTC
@@ -8,11 +8,14 @@ on:
   # Allow manual triggering
   workflow_dispatch:
     inputs:
-      debug:
-        description: "Enable debug logging"
+      debug_mode:
+        description: "Enable debug mode (visible browser)"
         required: false
-        default: false
-        type: boolean
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   earn-crowns:
@@ -92,12 +95,13 @@ jobs:
           TWO_CAPTCHA_API_KEY=${{ secrets.TWO_CAPTCHA_API_KEY }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           NODE_ENV=production
+          DEBUG_MODE=${{ github.event.inputs.debug_mode || 'false' }}
           EOF
 
       - name: Run earn crowns script
         run: |
           # Set debug flag if enabled
-          if [ "${{ inputs.debug }}" = "true" ]; then
+          if [ "${{ inputs.debug_mode }}" = "true" ]; then
             export DEBUG=true
           fi
 
@@ -123,3 +127,12 @@ jobs:
           name: quiz-answers-${{ github.run_number }}
           path: scripts/quiz-answers.json
           retention-days: 30
+
+      - name: Upload debug screenshots
+        uses: actions/upload-artifact@v4
+        if: always() && (github.event.inputs.debug_mode == 'true' || failure())
+        with:
+          name: debug-screenshots-${{ github.run_number }}
+          path: |
+            debug-*.png
+            *.png
