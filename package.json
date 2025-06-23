@@ -5,6 +5,7 @@
   "main": "scripts/earn-crowns.ts",
   "scripts": {
     "earn-crowns": "tsx scripts/earn-crowns.ts",
+    "earn-crowns-headless": "FORCE_VISIBLE=false tsx scripts/earn-crowns.ts",
     "debug": "DEBUG_MODE=true tsx scripts/earn-crowns.ts",
     "setup-cron": "chmod +x scripts/setup-cron.sh && ./scripts/setup-cron.sh",
     "view-logs": "chmod +x scripts/view-logs.sh && ./scripts/view-logs.sh"

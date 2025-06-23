@@ -1529,29 +1529,8 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
                   await new Promise((resolve) => setTimeout(resolve, 2000));
                 }
 
-                // Wait for animations to complete (fadeIn class indicates animation)
-                await page.evaluate((answerDiv) => {
-                  return new Promise<void>((resolve) => {
-                    const checkAnimations = () => {
-                      const hasAnimation =
-                        answerDiv.classList.contains("fadeIn");
-                      const computedStyle = window.getComputedStyle(answerDiv);
-                      const isAnimating =
-                        computedStyle.animationName !== "none" ||
-                        computedStyle.transitionProperty !== "none";
-
-                      if (!hasAnimation && !isAnimating) {
-                        resolve();
-                      } else {
-                        setTimeout(checkAnimations, 100);
-                      }
-                    };
-
-                    // Start checking immediately, but timeout after 3 seconds
-                    checkAnimations();
-                    setTimeout(resolve, 3000);
-                  });
-                }, answerElement);
+                // Simple wait instead of complex animation checking that causes TypeScript issues
+                await new Promise((resolve) => setTimeout(resolve, 1000));
 
                 console.log("✅ Animations complete, element should be ready");
 
@@ -1600,16 +1579,17 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
                         const wasSelected = await page.evaluate((answerDiv) => {
                           const radioInput = answerDiv.querySelector(
                             'input[type="radio"]'
-                          ) as HTMLInputElement;
-                          const checkbox = answerDiv.querySelector(
-                            ".largecheckbox"
-                          ) as HTMLElement;
+                          );
+                          const checkbox =
+                            answerDiv.querySelector(".largecheckbox");
 
                           // Check if radio is selected or if checkbox has selected styling
                           return (
-                            radioInput?.checked ||
-                            checkbox?.classList.contains("selected") ||
-                            checkbox?.classList.contains("checked") ||
+                            (radioInput && (radioInput as any).checked) ||
+                            (checkbox &&
+                              checkbox.classList.contains("selected")) ||
+                            (checkbox &&
+                              checkbox.classList.contains("checked")) ||
                             answerDiv.classList.contains("selected")
                           );
                         }, answerElement);
@@ -1644,199 +1624,11 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
                   );
                 }
 
-                // Method 2: JavaScript evaluation approach (fallback)
-                if (!answerClicked) {
-                  console.log("🔄 Trying JavaScript evaluation approach...");
-
-                  // Debug: Check what elements exist in this answer div
-                  const elementDebug = await page.evaluate((answerDiv) => {
-                    const answerBox = answerDiv.querySelector(".answerBox");
-                    const largecheckbox = answerDiv.querySelector(
-                      ".answerBox .largecheckbox"
-                    );
-                    const checkboxAlt =
-                      answerDiv.querySelector(".largecheckbox");
-                    const allCheckboxes = answerDiv.querySelectorAll(
-                      "a[name='checkboxtag']"
-                    );
-
-                    return {
-                      hasAnswerBox: !!answerBox,
-                      hasLargecheckbox: !!largecheckbox,
-                      hasCheckboxAlt: !!checkboxAlt,
-                      checkboxCount: allCheckboxes.length,
-                      functionAvailable:
-                        typeof (window as unknown as Record<string, unknown>)
-                          .selectQuizAnswer === "function",
-                      outerHTML: answerDiv.outerHTML.substring(0, 200) + "..."
-                    };
-                  }, answerElement);
-
-                  console.log(
-                    `🔍 Debug info for answer "${answerText}":`,
-                    elementDebug
-                  );
-
-                  if (!elementDebug.functionAvailable) {
-                    console.log(
-                      "❌ selectQuizAnswer function still not available, waiting longer..."
-                    );
-                    await new Promise((resolve) => setTimeout(resolve, 3000));
-                  }
-
-                  // Try to click the largecheckbox element directly
-                  const clickSuccess = await page.evaluate((answerDiv) => {
-                    try {
-                      // Try multiple selectors to find the checkbox
-                      let checkboxLink: HTMLElement | null = null;
-
-                      // Method 1: Standard selector
-                      checkboxLink = answerDiv.querySelector(
-                        ".answerBox .largecheckbox"
-                      ) as HTMLElement | null;
-
-                      // Method 2: Alternative selector
-                      if (!checkboxLink) {
-                        checkboxLink = answerDiv.querySelector(
-                          ".largecheckbox"
-                        ) as HTMLElement | null;
-                      }
-
-                      // Method 3: By name attribute
-                      if (!checkboxLink) {
-                        checkboxLink = answerDiv.querySelector(
-                          "a[name='checkboxtag']"
-                        ) as HTMLElement | null;
-                      }
-
-                      // Method 4: By onclick attribute
-                      if (!checkboxLink) {
-                        checkboxLink = answerDiv.querySelector(
-                          "a[onclick*='selectQuizAnswer']"
-                        ) as HTMLElement | null;
-                      }
-
-                      if (checkboxLink) {
-                        console.log(
-                          "Found checkbox element via:",
-                          checkboxLink.classList.contains("largecheckbox")
-                            ? "largecheckbox class"
-                            : checkboxLink.getAttribute("name") ===
-                              "checkboxtag"
-                            ? "checkboxtag name"
-                            : checkboxLink
-                                .getAttribute("onclick")
-                                ?.includes("selectQuizAnswer")
-                            ? "onclick attribute"
-                            : "unknown method"
-                        );
-
-                        // Call the selectQuizAnswer function directly (this is what the onclick does)
-                        if (
-                          typeof (window as unknown as Record<string, unknown>)
-                            .selectQuizAnswer === "function"
-                        ) {
-                          (
-                            (window as unknown as Record<string, unknown>)
-                              .selectQuizAnswer as (
-                              element: HTMLElement
-                            ) => void
-                          )(checkboxLink);
-                        }
-
-                        // Also trigger the click event
-                        checkboxLink.click();
-
-                        // Create comprehensive click events for maximum compatibility
-                        const events = [
-                          new MouseEvent("mousedown", {
-                            bubbles: true,
-                            cancelable: true,
-                            button: 0,
-                            buttons: 1,
-                            detail: 1
-                          }),
-                          new MouseEvent("mouseup", {
-                            bubbles: true,
-                            cancelable: true,
-                            button: 0,
-                            buttons: 1,
-                            detail: 1
-                          }),
-                          new MouseEvent("click", {
-                            bubbles: true,
-                            cancelable: true,
-                            button: 0,
-                            buttons: 1,
-                            detail: 1
-                          })
-                        ];
-
-                        // Dispatch events in sequence
-                        events.forEach((event) => {
-                          checkboxLink.dispatchEvent(event);
-                        });
-
-                        return {
-                          success: true,
-                          clickedElement: "largecheckbox",
-                          method: "JavaScript evaluation"
-                        };
-                      }
-
-                      return {
-                        success: false,
-                        error: "No checkbox element found with any selector"
-                      };
-                    } catch (error) {
-                      return {
-                        success: false,
-                        error: (error as Error).message
-                      };
-                    }
-                  }, answerElement);
-
-                  if (clickSuccess.success) {
-                    console.log(
-                      "✅ Answer clicked successfully via",
-                      clickSuccess.method
-                    );
-
-                    // Wait a moment and check if answer was selected
-                    await new Promise((resolve) => setTimeout(resolve, 200));
-
-                    const wasSelected = await page.evaluate((answerDiv) => {
-                      const radioInput = answerDiv.querySelector(
-                        'input[type="radio"]'
-                      ) as HTMLInputElement;
-                      const checkbox = answerDiv.querySelector(
-                        ".largecheckbox"
-                      ) as HTMLElement;
-
-                      return (
-                        radioInput?.checked ||
-                        checkbox?.classList.contains("selected") ||
-                        checkbox?.classList.contains("checked") ||
-                        answerDiv.classList.contains("selected")
-                      );
-                    }, answerElement);
-
-                    if (wasSelected) {
-                      console.log("✅ Selection confirmed via JavaScript");
-                      answerClicked = true;
-                      break;
-                    } else {
-                      console.log(
-                        "⚠️ Click executed but selection not confirmed"
-                      );
-                    }
-                  } else {
-                    console.log(
-                      `❌ Attempt ${clickAttempts} failed:`,
-                      clickSuccess.error
-                    );
-                  }
-                }
+                // Method 2: Skip the complex JavaScript evaluation - it's causing __name errors
+                // The final fallback method works fine, so we'll rely on that instead
+                console.log(
+                  "🔄 Skipping complex evaluation to avoid errors..."
+                );
 
                 // If neither method worked, wait before retry
                 if (!answerClicked && clickAttempts < maxAttempts) {
@@ -1927,9 +1719,9 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
                 try {
                   const checkboxLink = answerDiv.querySelector(
                     "a[name='checkboxtag']"
-                  ) as HTMLElement;
+                  );
                   if (checkboxLink) {
-                    checkboxLink.click();
+                    (checkboxLink as any).click();
                     return true;
                   }
                   return false;
@@ -1970,8 +1762,8 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
             // Check if the button exists and is visible
             const buttonExists = await page.evaluate((sel) => {
               try {
-                const btn = document.querySelector(sel) as HTMLElement;
-                return btn && btn.offsetParent !== null;
+                const btn = document.querySelector(sel);
+                return btn && (btn as any).offsetParent !== null;
               } catch {
                 return false;
               }
@@ -1992,9 +1784,9 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
               try {
                 await page.evaluate((sel) => {
                   try {
-                    const btn = document.querySelector(sel) as HTMLElement;
+                    const btn = document.querySelector(sel);
                     if (btn) {
-                      btn.click();
+                      (btn as any).click();
                     }
                   } catch {
                     // Ignore errors during navigation
@@ -3378,14 +3170,19 @@ async function main() {
   const debugMode =
     process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
 
+  // Force visible mode for now since headless mode has login issues
+  const forceVisible = process.env.FORCE_VISIBLE !== "false";
+  const shouldRunVisible = debugMode || forceVisible;
+
   console.log(`🔧 Debug mode: ${debugMode ? "ENABLED" : "DISABLED"}`);
+  console.log(`🔧 Force visible: ${forceVisible ? "ENABLED" : "DISABLED"}`);
   console.log(
-    `🖥️ Browser will run in ${debugMode ? "VISIBLE" : "HEADLESS"} mode`
+    `🖥️ Browser will run in ${shouldRunVisible ? "VISIBLE" : "HEADLESS"} mode`
   );
 
   // Launch browser with stealth-optimized settings
   const browser = await puppeteer.launch({
-    headless: !debugMode, // Run with visible browser if debug mode is enabled
+    headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
     defaultViewport: null,
     userDataDir: userDataDir, // Use project-specific user data directory
     args: [
