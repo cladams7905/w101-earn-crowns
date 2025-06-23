@@ -3170,12 +3170,17 @@ async function main() {
   const debugMode =
     process.env.DEBUG_MODE === "true" || process.env.NODE_ENV === "development";
 
-  // Force visible mode for now since headless mode has login issues
+  // Check if we're running in CI environment (GitHub Actions)
+  const isCI =
+    process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+
+  // Force visible mode for now since headless mode has login issues, but respect CI environment
   const forceVisible = process.env.FORCE_VISIBLE !== "false";
-  const shouldRunVisible = debugMode || forceVisible;
+  const shouldRunVisible = (debugMode || forceVisible) && !isCI;
 
   console.log(`🔧 Debug mode: ${debugMode ? "ENABLED" : "DISABLED"}`);
   console.log(`🔧 Force visible: ${forceVisible ? "ENABLED" : "DISABLED"}`);
+  console.log(`🔧 CI environment: ${isCI ? "DETECTED" : "NOT DETECTED"}`);
   console.log(
     `🖥️ Browser will run in ${shouldRunVisible ? "VISIBLE" : "HEADLESS"} mode`
   );
@@ -3244,40 +3249,66 @@ async function main() {
   const executablePath = getChromePath();
   console.log(`🔧 Using Chrome at: ${executablePath}`);
 
+  // Prepare browser arguments with CI-specific optimizations
+  const baseArgs = [
+    "--no-sandbox", // Required for most environments
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-blink-features=AutomationControlled", // Additional stealth
+    "--disable-extensions",
+    "--disable-plugins-discovery",
+    "--disable-default-apps",
+    "--disable-background-networking",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-renderer-backgrounding",
+    "--disable-features=TranslateUI",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-web-security", // Help with cross-origin issues
+    "--disable-features=VizDisplayCompositor" // Better stability
+  ];
+
+  // Add CI-specific arguments
+  const ciArgs = isCI
+    ? [
+        "--disable-gpu", // Required for headless mode in CI
+        "--disable-gpu-sandbox",
+        "--disable-software-rasterizer",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-renderer-backgrounding",
+        "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+        "--run-all-compositor-stages-before-draw",
+        "--virtual-time-budget=5000" // Better timing control in CI
+      ]
+    : [
+        "--start-maximized",
+        "--enable-experimental-web-platform-features", // Enable better cursor support
+        "--force-renderer-accessibility" // Ensure accessibility features work
+      ];
+
+  // Add debug-specific arguments
+  const debugArgs =
+    debugMode && !isCI
+      ? ["--disable-extensions-except", "--disable-plugins-discovery"]
+      : [];
+
+  const allArgs = [...baseArgs, ...ciArgs, ...debugArgs];
+
+  console.log(
+    `🔧 Browser arguments: ${allArgs.length} args configured for ${
+      isCI ? "CI" : "local"
+    } environment`
+  );
+
   // Launch browser with stealth-optimized settings
   const browser = await puppeteer.launch({
     executablePath, // Required for puppeteer-core
     headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
     defaultViewport: null,
     userDataDir: userDataDir, // Use project-specific user data directory
-    args: [
-      "--no-sandbox", // Required for most environments
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-blink-features=AutomationControlled", // Additional stealth
-      "--disable-extensions",
-      "--disable-plugins-discovery",
-      "--disable-default-apps",
-      "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-backgrounding-occluded-windows",
-      "--disable-renderer-backgrounding",
-      "--disable-features=TranslateUI",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--start-maximized",
-      "--enable-experimental-web-platform-features", // Enable better cursor support
-      "--force-renderer-accessibility", // Ensure accessibility features work
-      "--disable-web-security", // Help with cross-origin issues
-      "--disable-features=VizDisplayCompositor", // Better stability
-      ...(debugMode
-        ? [
-            "--disable-dev-shm-usage", // Extra stability for visible mode
-            "--disable-extensions-except",
-            "--disable-plugins-discovery"
-          ]
-        : [])
-    ]
+    args: allArgs
   });
 
   try {
