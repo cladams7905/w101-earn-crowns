@@ -3093,9 +3093,9 @@ async function main() {
 
       // Check if we need to handle 2FA or additional verification
       const additionalChecks = await page.evaluate(() => {
-        const has2FA = !!document.querySelector(
-          ".two-factor, .2fa, .verification"
-        );
+        const has2FA =
+          !!document.querySelector(".two-factor, .verification") ||
+          !!document.querySelector('[class*="2fa"]');
         const hasCaptcha = !!document.querySelector(".captcha, .recaptcha");
         return { has2FA, hasCaptcha };
       });
