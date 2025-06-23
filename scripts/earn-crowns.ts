@@ -384,7 +384,7 @@ function getRandomItems<T>(array: T[], n: number): T[] {
 }
 
 // Function to handle reCAPTCHA challenges
-async function handleReCaptchaChallenge(page: Page): Promise<void> {
+async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
   console.log("🔍 Looking for reCAPTCHA popup/modal...");
 
   // Wait a bit for potential popup to appear
@@ -705,6 +705,9 @@ async function handleReCaptchaChallenge(page: Page): Promise<void> {
 
       // Wait for potential redirect or modal close after solving captcha
       await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // Return the token for later use
+      return result.data;
     } catch (captchaError) {
       console.log("❌ Failed to solve reCAPTCHA:", captchaError);
       throw captchaError;
@@ -802,11 +805,17 @@ async function handleReCaptchaChallenge(page: Page): Promise<void> {
 
       // Wait for potential redirect or modal close
       await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // Return the fallback token for later use
+      return result.data;
     } catch (fallbackError) {
       console.log("❌ Fallback reCAPTCHA solve failed:", fallbackError);
       throw fallbackError;
     }
   }
+
+  // Return null if no reCAPTCHA was found or solved
+  return null;
 }
 
 // Function to normalize text for better matching
@@ -4168,7 +4177,7 @@ async function main() {
 
         try {
           // Use the existing handleReCaptchaChallenge function which is designed for visible reCAPTCHAs
-          await handleReCaptchaChallenge(page);
+          const reCaptchaToken = await handleReCaptchaChallenge(page);
 
           console.log("✅ reCAPTCHA challenge handled successfully");
 
@@ -4413,17 +4422,9 @@ async function main() {
               );
 
               try {
-                // First, we need to get the reCAPTCHA token that was solved earlier
-                // Look for the token in the main page first
-                const reCaptchaToken = await page.evaluate(() => {
-                  const responseField = document.getElementById(
-                    "g-recaptcha-response"
-                  ) as HTMLTextAreaElement;
-                  return responseField?.value || null;
-                });
-
+                // Use the reCAPTCHA token that was solved and returned by handleReCaptchaChallenge
                 console.log(
-                  `🔐 Retrieved reCAPTCHA token from main page: ${
+                  `🔐 Using stored reCAPTCHA token: ${
                     reCaptchaToken
                       ? reCaptchaToken.substring(0, 20) + "..."
                       : "NOT FOUND"
