@@ -3129,6 +3129,17 @@ async function claimQuizReward(page: Page): Promise<void> {
 }
 
 async function main() {
+  // Add error handlers for CI debugging
+  if (isCI) {
+    process.on("unhandledRejection", (reason, promise) => {
+      console.log("🚨 Unhandled Rejection at:", promise, "reason:", reason);
+    });
+
+    process.on("uncaughtException", (error) => {
+      console.log("🚨 Uncaught Exception:", error);
+    });
+  }
+
   // Check for required environment variables
   const username = process.env.WIZARD101_USERNAME;
   const password = process.env.WIZARD101_PASSWORD;
@@ -3179,8 +3190,8 @@ async function main() {
   const projectDir = process.cwd();
   const userDataDir = path.join(projectDir, ".chrome-user-data");
 
-  // Ensure the user data directory exists
-  if (!fs.existsSync(userDataDir)) {
+  // Ensure the user data directory exists (only for local environments)
+  if (!isCI && !fs.existsSync(userDataDir)) {
     fs.mkdirSync(userDataDir, { recursive: true });
     console.log(`📁 Created Chrome user data directory: ${userDataDir}`);
   }
@@ -3273,20 +3284,12 @@ async function main() {
     "--disable-dev-shm-usage",
     "--disable-blink-features=AutomationControlled", // Additional stealth
     "--disable-extensions",
-    "--disable-plugins-discovery",
     "--disable-default-apps",
-    "--disable-background-networking",
-    "--disable-background-timer-throttling",
-    "--disable-backgrounding-occluded-windows",
-    "--disable-renderer-backgrounding",
-    "--disable-features=TranslateUI",
     "--no-first-run",
-    "--no-default-browser-check",
-    "--disable-web-security", // Help with cross-origin issues
-    "--disable-features=VizDisplayCompositor" // Better stability
+    "--no-default-browser-check"
   ];
 
-  // Add CI-specific arguments
+  // Add CI-specific arguments - minimal and stable
   const ciArgs = isCI
     ? [
         "--disable-gpu", // Required for headless mode in CI
@@ -3295,24 +3298,9 @@ async function main() {
         "--disable-background-timer-throttling",
         "--disable-backgrounding-occluded-windows",
         "--disable-renderer-backgrounding",
-        "--disable-features=TranslateUI,BlinkGenPropertyTrees",
-        "--run-all-compositor-stages-before-draw",
-        "--virtual-time-budget=5000", // Better timing control in CI
-        "--disable-ipc-flooding-protection", // Prevent IPC flooding protection
-        "--disable-hang-monitor", // Disable hang monitor
-        "--disable-prompt-on-repost", // Disable repost prompts
-        "--disable-component-update", // Disable component updates
-        "--disable-breakpad", // Disable crash reporting
-        "--disable-crashpad", // Disable crash reporting
-        "--no-crash-upload", // Don't upload crashes
-        "--disable-site-isolation-trials", // Disable site isolation
-        "--disable-features=VizDisplayCompositor,VizHitTestSurfaceLayer", // Disable compositor features that can cause frame issues
-        "--disable-threaded-compositing", // Disable threaded compositing
-        "--disable-checker-imaging", // Disable checker imaging
-        "--disable-frame-rate-limit", // Remove frame rate limits
-        "--max_old_space_size=4096", // Increase memory limit
-        "--no-zygote", // Disable zygote process forking
-        "--disable-blink-features=AutomationControlled" // Additional automation hiding
+        "--disable-features=TranslateUI,VizDisplayCompositor",
+        "--memory-pressure-off",
+        "--max_old_space_size=4096"
       ]
     : [
         "--start-maximized",
@@ -3339,20 +3327,59 @@ async function main() {
 
   let browser;
   try {
-    browser = await puppeteer.launch({
+    const launchOptions = {
       executablePath, // Required for puppeteer-core
-      headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
+      headless: isCI ? "new" : !shouldRunVisible, // Use new headless mode for CI, respect visible setting for local
       defaultViewport: isCI ? { width: 1366, height: 768 } : null, // Set default viewport for CI
-      userDataDir: userDataDir, // Use project-specific user data directory
       args: allArgs,
       // Add additional stability options for CI
       ...(isCI && {
         timeout: 60000, // Increase timeout for CI
-        protocolTimeout: 240000 // Increase protocol timeout
-      })
-    });
+        protocolTimeout: 240000, // Increase protocol timeout
+        ignoreDefaultArgs: ["--enable-automation"], // Remove automation flags
+        ignoreHTTPSErrors: true // Ignore HTTPS errors in CI
+      }),
+      // Only use userDataDir for local environments
+      ...(!isCI && { userDataDir: userDataDir })
+    };
+
+    console.log(
+      `🔧 Launch options configured for ${isCI ? "CI" : "local"} environment`
+    );
+    if (isCI) {
+      console.log(
+        `🔧 CI mode: headless="${
+          launchOptions.headless
+        }", viewport=${JSON.stringify(launchOptions.defaultViewport)}`
+      );
+      console.log(
+        `🔧 CI args sample: ${allArgs.slice(0, 5).join(", ")}... (${
+          allArgs.length
+        } total)`
+      );
+    }
+
+    browser = await puppeteer.launch(launchOptions);
 
     console.log("✅ Browser launched successfully");
+
+    // Add browser event listeners for debugging in CI
+    if (isCI) {
+      browser.on("disconnected", () => {
+        console.log("🔌 Browser disconnected event");
+      });
+
+      browser.on("targetcreated", (target) => {
+        console.log(`🎯 Target created: ${target.type()} - ${target.url()}`);
+      });
+
+      browser.on("targetdestroyed", (target) => {
+        console.log(`💥 Target destroyed: ${target.type()}`);
+      });
+
+      console.log(`🔧 Browser version: ${await browser.version()}`);
+      console.log(`🔧 Browser user agent: ${await browser.userAgent()}`);
+    }
   } catch (launchError) {
     console.error("❌ Browser launch failed:", launchError);
     throw new Error(`Browser launch failed: ${launchError.message}`);
@@ -3360,13 +3387,51 @@ async function main() {
 
   try {
     console.log("📄 Creating new page...");
-    const page = await browser.newPage();
-    console.log("✅ New page created successfully");
+
+    // Add retry logic for page creation in CI
+    let page;
+    let pageCreateRetries = 0;
+    const maxPageCreateRetries = isCI ? 3 : 1;
+
+    while (pageCreateRetries < maxPageCreateRetries) {
+      try {
+        page = await browser.newPage();
+
+        // Immediately check if page is valid
+        if (page.isClosed()) {
+          throw new Error("Page was closed immediately after creation");
+        }
+
+        console.log("✅ New page created successfully");
+        break;
+      } catch (pageCreateError) {
+        pageCreateRetries++;
+        console.log(
+          `❌ Page creation attempt ${pageCreateRetries}/${maxPageCreateRetries} failed:`,
+          pageCreateError.message
+        );
+
+        if (pageCreateRetries >= maxPageCreateRetries) {
+          throw new Error(
+            `Page creation failed after ${maxPageCreateRetries} attempts: ${pageCreateError.message}`
+          );
+        }
+
+        // Wait before retry
+        console.log("⏳ Waiting before page creation retry...");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
 
     // Wait a moment for the page to stabilize in CI
     if (isCI) {
       console.log("⏳ Waiting for page to stabilize in CI environment...");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Double-check page is still valid after stabilization
+      if (page.isClosed()) {
+        throw new Error("Page became closed during stabilization");
+      }
     }
 
     // Enhanced stealth setup (simplified for CI)
