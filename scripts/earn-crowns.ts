@@ -4366,118 +4366,139 @@ async function main() {
               );
 
               try {
+                // First, we need to get the reCAPTCHA token that was solved earlier
+                // Look for the token in the main page first
+                const reCaptchaToken = await page.evaluate(() => {
+                  const responseField = document.getElementById(
+                    "g-recaptcha-response"
+                  ) as HTMLTextAreaElement;
+                  return responseField?.value || null;
+                });
+
+                console.log(
+                  `🔐 Retrieved reCAPTCHA token from main page: ${
+                    reCaptchaToken
+                      ? reCaptchaToken.substring(0, 20) + "..."
+                      : "NOT FOUND"
+                  }`
+                );
+
                 // Enhanced login button detection within the quarantined frame
-                loginButtonClicked = await frame.evaluate(() => {
+                loginButtonClicked = await frame.evaluate((token) => {
                   console.log(
                     "🔍 Searching for login button in quarantined frame..."
                   );
 
-                  // First, let's get all buttons and analyze them
-                  const allButtons = Array.from(
-                    document.querySelectorAll(
-                      'button, input[type="submit"], input[type="button"], a'
-                    )
-                  );
+                  // CRITICAL FIX: Set the reCAPTCHA token in the quarantined frame's form
                   console.log(
-                    `📋 Found ${allButtons.length} buttons/clickable elements`
+                    "🔐 Setting reCAPTCHA token in quarantined frame form..."
                   );
 
-                  allButtons.forEach((btn, index) => {
-                    const text =
-                      (btn as HTMLElement).textContent?.trim() ||
-                      (btn as HTMLInputElement).value ||
-                      "";
-                    const className = (btn as HTMLElement).className || "";
-                    const id = (btn as HTMLElement).id || "";
-                    const onclick =
-                      (btn as HTMLElement).getAttribute("onclick") || "";
+                  const captchaTokenField = document.getElementById(
+                    "captchaToken"
+                  ) as HTMLInputElement;
+                  if (captchaTokenField && token) {
+                    captchaTokenField.value = token;
                     console.log(
-                      `Button ${index}: text="${text}", class="${className}", id="${id}", onclick="${onclick}"`
+                      `✅ Set captchaToken field in frame: ${token.substring(
+                        0,
+                        20
+                      )}...`
                     );
-                  });
-
-                  // Look for the green Login button specifically
-                  const loginButtonSelectors = [
-                    // Look for buttons with "Login" text
-                    '*[contains(text(), "Login")]',
-                    'button:contains("Login")',
-                    'input[value="Login"]',
-                    // Look for buttons with login-related classes or styling
-                    ".login-button",
-                    ".btn-login",
-                    '[class*="login"]',
-                    // Look for green-styled buttons (common for login)
-                    '[style*="green"]',
-                    '[class*="green"]',
-                    // Generic submit buttons
-                    'button[type="submit"]',
-                    'input[type="submit"]',
-                    // Any button in the modal
-                    "button",
-                    'input[type="button"]'
-                  ];
-
-                  // Try text-based search first (most reliable)
-                  for (const btn of allButtons) {
-                    const text =
-                      (btn as HTMLElement).textContent?.trim() ||
-                      (btn as HTMLInputElement).value ||
-                      "";
-                    if (text.toLowerCase() === "login") {
-                      console.log(
-                        `🎯 Found exact "Login" text button: ${text}`
-                      );
-                      (btn as HTMLElement).click();
-                      return true;
-                    }
+                  } else {
+                    console.log(
+                      "❌ Could not find captchaToken field in frame or token is missing"
+                    );
                   }
 
-                  // Try case-insensitive text search
-                  for (const btn of allButtons) {
-                    const text =
-                      (btn as HTMLElement).textContent?.trim() ||
-                      (btn as HTMLInputElement).value ||
-                      "";
-                    if (text.toLowerCase().includes("login")) {
-                      console.log(`🎯 Found login-containing button: ${text}`);
-                      (btn as HTMLElement).click();
-                      return true;
-                    }
+                  // Also set g-recaptcha-response in the frame if it exists
+                  const gRecaptchaResponse = document.getElementById(
+                    "g-recaptcha-response"
+                  ) as HTMLTextAreaElement;
+                  if (gRecaptchaResponse && token) {
+                    gRecaptchaResponse.value = token;
+                    gRecaptchaResponse.innerHTML = token;
+                    console.log("✅ Set g-recaptcha-response field in frame");
                   }
 
-                  // Try submit buttons (the green button might be a submit button)
-                  for (const btn of allButtons) {
-                    if (
-                      (btn as HTMLInputElement).type === "submit" ||
-                      (btn as HTMLElement).tagName.toLowerCase() === "button"
-                    ) {
-                      const text =
-                        (btn as HTMLElement).textContent?.trim() ||
-                        (btn as HTMLInputElement).value ||
-                        "";
-                      console.log(`🎯 Trying submit/button: ${text}`);
-                      (btn as HTMLElement).click();
-                      return true;
-                    }
-                  }
+                  // Now look for the specific green Login button (id: bp_login) from the analysis
+                  console.log(
+                    "🎯 Looking for Login button with id 'bp_login'..."
+                  );
+                  const loginButton = document.getElementById("bp_login");
 
-                  // Last resort: click any button (since there should only be Close and Login)
-                  if (allButtons.length > 0) {
-                    // Skip the first button if it's likely "Close", try the second one
-                    const buttonToClick =
-                      allButtons.length > 1 ? allButtons[1] : allButtons[0];
-                    const text =
-                      (buttonToClick as HTMLElement).textContent?.trim() ||
-                      (buttonToClick as HTMLInputElement).value ||
-                      "";
-                    console.log(`🎯 Last resort - clicking button: ${text}`);
-                    (buttonToClick as HTMLElement).click();
+                  if (loginButton) {
+                    console.log(`✅ Found Login button with id 'bp_login':`);
+                    console.log(
+                      `   Text: "${loginButton.textContent?.trim()}"`
+                    );
+                    console.log(`   Class: "${loginButton.className}"`);
+                    console.log(
+                      `   OnClick: "${loginButton.getAttribute("onclick")}"`
+                    );
+
+                    // Click the login button - this should trigger the hidden submit
+                    loginButton.click();
+                    console.log("🎯 Clicked the green Login button (bp_login)");
                     return true;
                   }
 
-                  console.log("❌ No suitable login button found");
+                  // Fallback 1: Look for the hidden submit button (id: login) and click it directly
+                  console.log(
+                    "🔄 Fallback 1: Looking for hidden submit button..."
+                  );
+                  const hiddenSubmit = document.getElementById(
+                    "login"
+                  ) as HTMLInputElement;
+                  if (hiddenSubmit && hiddenSubmit.type === "submit") {
+                    console.log(`✅ Found hidden submit button:`);
+                    console.log(`   Type: "${hiddenSubmit.type}"`);
+                    console.log(`   Class: "${hiddenSubmit.className}"`);
+
+                    hiddenSubmit.click();
+                    console.log("🎯 Clicked the hidden submit button (login)");
+                    return true;
+                  }
+
+                  // Fallback 2: Look for any element with "buttonsubmit" class and "Login" text
+                  console.log(
+                    "🔄 Fallback 2: Looking for buttonsubmit with Login text..."
+                  );
+                  const submitButtons = Array.from(
+                    document.querySelectorAll(
+                      "a.buttonsubmit, button.buttonsubmit"
+                    )
+                  );
+                  for (const button of submitButtons) {
+                    const text =
+                      (button as HTMLElement).textContent?.trim() || "";
+                    if (text.toLowerCase() === "login") {
+                      console.log(`✅ Found buttonsubmit Login: ${text}`);
+                      (button as HTMLElement).click();
+                      return true;
+                    }
+                  }
+
+                  // Fallback 3: Execute the exact onclick handler we saw in the analysis
+                  console.log(
+                    "🔄 Fallback 3: Manually executing hidden submit click..."
+                  );
+                  try {
+                    const manualSubmit = document.getElementById(
+                      "login"
+                    ) as HTMLInputElement;
+                    if (manualSubmit) {
+                      manualSubmit.click();
+                      console.log("🎯 Manually triggered hidden submit");
+                      return true;
+                    }
+                  } catch (manualError) {
+                    console.log("❌ Manual submit failed:", manualError);
+                  }
+
+                  console.log("❌ All login button methods failed");
                   return false;
-                });
+                }, reCaptchaToken);
 
                 if (loginButtonClicked) {
                   console.log(
