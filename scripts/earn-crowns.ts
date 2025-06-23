@@ -3290,7 +3290,15 @@ async function main() {
         "--disable-renderer-backgrounding",
         "--disable-features=TranslateUI,BlinkGenPropertyTrees",
         "--run-all-compositor-stages-before-draw",
-        "--virtual-time-budget=5000" // Better timing control in CI
+        "--virtual-time-budget=5000", // Better timing control in CI
+        "--disable-ipc-flooding-protection", // Prevent IPC flooding protection
+        "--disable-hang-monitor", // Disable hang monitor
+        "--disable-prompt-on-repost", // Disable repost prompts
+        "--disable-component-update", // Disable component updates
+        "--disable-breakpad", // Disable crash reporting
+        "--disable-crashpad", // Disable crash reporting
+        "--no-crash-upload", // Don't upload crashes
+        "--single-process" // Run in single process mode for stability
       ]
     : [
         "--start-maximized",
@@ -3313,24 +3321,62 @@ async function main() {
   );
 
   // Launch browser with stealth-optimized settings
-  const browser = await puppeteer.launch({
-    executablePath, // Required for puppeteer-core
-    headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
-    defaultViewport: null,
-    userDataDir: userDataDir, // Use project-specific user data directory
-    args: allArgs
-  });
+  console.log("🚀 Launching browser...");
+
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      executablePath, // Required for puppeteer-core
+      headless: !shouldRunVisible, // Run with visible browser if debug mode or force visible
+      defaultViewport: isCI ? { width: 1366, height: 768 } : null, // Set default viewport for CI
+      userDataDir: userDataDir, // Use project-specific user data directory
+      args: allArgs,
+      // Add additional stability options for CI
+      ...(isCI && {
+        timeout: 60000, // Increase timeout for CI
+        protocolTimeout: 240000 // Increase protocol timeout
+      })
+    });
+
+    console.log("✅ Browser launched successfully");
+  } catch (launchError) {
+    console.error("❌ Browser launch failed:", launchError);
+    throw new Error(`Browser launch failed: ${launchError.message}`);
+  }
 
   try {
+    console.log("📄 Creating new page...");
     const page = await browser.newPage();
+    console.log("✅ New page created successfully");
+
+    // Wait a moment for the page to stabilize in CI
+    if (isCI) {
+      console.log("⏳ Waiting for page to stabilize in CI environment...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
     // Enhanced stealth setup (simplified for CI)
     console.log(
       `🛡️ Setting up ${isCI ? "simplified" : "enhanced"} stealth mode...`
     );
 
-    // Set realistic viewport
-    await page.setViewport({ width: 1366, height: 768 });
+    // Set realistic viewport (skip for CI since we set defaultViewport)
+    if (!isCI) {
+      try {
+        console.log("🖼️ Setting viewport...");
+        await page.setViewport({ width: 1366, height: 768 });
+        console.log("✅ Viewport set successfully");
+      } catch (viewportError) {
+        console.log(
+          "⚠️ Viewport setting failed, continuing:",
+          viewportError.message
+        );
+      }
+    } else {
+      console.log(
+        "🔧 Skipping manual viewport setting in CI (using defaultViewport)"
+      );
+    }
 
     // Fix cursor visibility and interaction issues (only for local environments)
     if (!isCI) {
