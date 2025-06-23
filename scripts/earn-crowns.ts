@@ -1,5 +1,3 @@
-import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { Page } from "puppeteer-core";
 import * as path from "path";
 import * as fs from "fs";
@@ -9,11 +7,17 @@ import * as readline from "readline";
 // Import TwoCaptcha using the TypeScript-friendly package
 import * as TwoCaptcha from "2captcha-ts";
 
-// Check if we're in CI environment early for stealth plugin configuration
+// Check if we're in CI environment early for puppeteer selection
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 
-// Configure stealth plugin - disable in CI to avoid session conflicts
+// Use different puppeteer imports based on environment
+let puppeteer: any;
+
 if (!isCI) {
+  // Local environment: Use puppeteer-extra with stealth plugin
+  const puppeteerExtra = require("puppeteer-extra");
+  const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+
   const stealthPlugin = StealthPlugin();
 
   // Optional: Log available and enabled evasions for debugging
@@ -25,11 +29,14 @@ if (!isCI) {
   ]);
 
   // Add stealth plugin only for local environments
-  puppeteer.use(stealthPlugin);
+  puppeteerExtra.use(stealthPlugin);
+  puppeteer = puppeteerExtra;
   console.log("🛡️ Stealth plugin enabled for local environment");
 } else {
+  // CI environment: Use regular puppeteer-core directly
+  puppeteer = require("puppeteer-core");
   console.log(
-    "🔧 Stealth plugin disabled in CI environment to avoid session conflicts"
+    "🔧 Using puppeteer-core directly in CI environment to avoid session conflicts"
   );
 }
 
