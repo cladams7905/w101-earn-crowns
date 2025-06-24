@@ -26,8 +26,8 @@ jobs:
   earn-crowns:
     runs-on: ubuntu-latest
 
-    # Timeout after 30 minutes
-    timeout-minutes: 30
+    # Timeout after 40 minutes
+    timeout-minutes: 40
 
     steps:
       - name: Checkout code
@@ -113,6 +113,24 @@ jobs:
 
           # Run the script
           npm run earn-crowns
+
+      - name: Commit and push changes
+        if: always()
+        run: |
+          # Configure git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if there are any changes
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected, committing and pushing..."
+            git add -A
+            git commit -m "Auto-update files from earn-crowns workflow [skip ci]"
+            git push
+            echo "Changes committed and pushed successfully"
+          else
+            echo "No changes detected, skipping commit"
+          fi
 
       - name: Upload logs
         if: always()

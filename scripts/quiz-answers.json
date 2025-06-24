@@ -1336,60 +1336,6 @@
     ]
   },
   {
-    "quiz": "KingsIsle Facts Trivia",
-    "pathname": "/kingsisle-facts-trivia",
-    "answers": [
-      {
-        "question": "What is the name of KingsIsle's free game site?",
-        "answer": "FreeKI Games"
-      },
-      {
-        "question": "What year was KingsIsle's founded?",
-        "answer": "2005"
-      },
-      {
-        "question": "What currency do KingsIsle MMO games use?",
-        "answer": "Crowns"
-      },
-      {
-        "question": "What KingsIsle mobile game ties into a player's pet in Wizard101?",
-        "answer": "Grub Guardian"
-      },
-      {
-        "question": "What year did KingsIsle launch Wizard101?",
-        "answer": "2008"
-      },
-      {
-        "question": "Which Plano charity has KingsIsle donated to?",
-        "answer": "Children's Medical Center at Legacy in Plano"
-      },
-      {
-        "question": "What was the name of KingsIsle's first game?",
-        "answer": "Wizard101"
-      },
-      {
-        "question": "Which celebrity composed music for a KingsIsle game?",
-        "answer": "Nick Jonas"
-      },
-      {
-        "question": "What was the name of the first charity Mount created by KingsIsle called?",
-        "answer": "Meowmodon"
-      },
-      {
-        "question": "Who founded KingsIsle Entertainment, Inc.?",
-        "answer": "Elie Akilian"
-      },
-      {
-        "question": "Which Austin charity has KingsIsle donated to?",
-        "answer": "Austin Children's Shelter"
-      },
-      {
-        "question": "What colors make up the KingsIsle logo?",
-        "answer": "Orange and Grey"
-      }
-    ]
-  },
-  {
     "quiz": "Ninth Grade Vocabulary Trivia",
     "pathname": "/ninth-grade-vocabulary-trivia",
     "answers": [
