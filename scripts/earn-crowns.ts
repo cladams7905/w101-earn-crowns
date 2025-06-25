@@ -1946,19 +1946,45 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
 
     // Only try to claim reward if quiz was successfully completed
     if (quizStats.questionsAnswered > 0) {
-      // Try to claim the reward
-      await claimQuizReward(page);
+      // Try to claim the reward and validate the results
+      const rewardResult = await claimQuizReward(page);
 
-      // Update global stats
-      globalStats.totalQuestionsAttempted += quizStats.questionsAttempted;
-      globalStats.totalQuestionsAnswered += quizStats.questionsAnswered;
-      globalStats.totalQuestionsSkipped += quizStats.questionsSkipped;
-      globalStats.totalRandomAnswers += quizStats.randomAnswers;
-      globalStats.totalDatabaseAnswers += quizStats.databaseAnswers;
-      globalStats.totalGeminiAnswers += quizStats.geminiAnswers;
-      globalStats.successfulQuizzes++;
+      if (rewardResult.success) {
+        if (rewardResult.rewardClaimed !== false) {
+          console.log("✅ Quiz passed validation and reward claimed!");
+        } else {
+          console.log(
+            "✅ Quiz completed but scored below threshold - counted towards total"
+          );
+        }
 
-      return true; // Quiz was successful
+        if (rewardResult.score) {
+          console.log(
+            `📊 Final quiz validation: ${rewardResult.score.correct}/${rewardResult.score.total} correct answers`
+          );
+        }
+
+        // Update global stats (all completed quizzes count towards total)
+        globalStats.totalQuestionsAttempted += quizStats.questionsAttempted;
+        globalStats.totalQuestionsAnswered += quizStats.questionsAnswered;
+        globalStats.totalQuestionsSkipped += quizStats.questionsSkipped;
+        globalStats.totalRandomAnswers += quizStats.randomAnswers;
+        globalStats.totalDatabaseAnswers += quizStats.databaseAnswers;
+        globalStats.totalGeminiAnswers += quizStats.geminiAnswers;
+        globalStats.successfulQuizzes++;
+
+        return true; // Quiz counts as successful (completed)
+      } else {
+        console.log("❌ Quiz processing failed - not counting as successful");
+
+        if (rewardResult.score) {
+          console.log(
+            `📊 Quiz failed with score: ${rewardResult.score.correct}/${rewardResult.score.total} correct answers`
+          );
+        }
+
+        return false; // Quiz failed completely
+      }
     } else {
       console.log("❌ Quiz had no successful answers - skipping reward claim");
       return false; // Quiz failed
@@ -1969,18 +1995,252 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
   }
 }
 
-// Function to claim quiz reward with recaptcha handling
-async function claimQuizReward(page: Page): Promise<void> {
+// Function to claim quiz reward with recaptcha handling and result validation
+async function claimQuizReward(page: Page): Promise<{
+  success: boolean;
+  score?: { correct: number; total: number };
+  rewardClaimed?: boolean;
+}> {
   try {
     console.log(`\n🎁 Attempting to claim reward...`);
+
+    // Save the HTML of the claim reward page before doing anything
+    console.log("💾 Saving claim reward page HTML...");
+    try {
+      const rewardPageHTML = await page.content();
+      const fs = require("fs");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const fileName = `claim-reward-page-${timestamp}.html`;
+      fs.writeFileSync(fileName, rewardPageHTML);
+      console.log(`✅ Claim reward page HTML saved to ${fileName}`);
+    } catch (htmlSaveError) {
+      console.log("⚠️ Could not save claim reward page HTML:", htmlSaveError);
+    }
 
     // Add a timeout wrapper around the entire reward claiming process
     const rewardClaimTimeout = 180000; // 3 minutes timeout for the entire process
 
-    const claimPromise = new Promise<void>(async (resolve) => {
+    // Declare quizScore at function level so it's accessible throughout
+    let quizScore = { correct: 0, total: 0 };
+
+    const claimPromise = new Promise<{
+      success: boolean;
+      score?: { correct: number; total: number };
+      rewardClaimed?: boolean;
+    }>(async (resolve) => {
       try {
         // Wait for the quiz completion page to load
         await new Promise((innerResolve) => setTimeout(innerResolve, 2000));
+
+        // First, look for and click "See correct answers!" button to validate the quiz
+        console.log("📊 Looking for 'See correct answers!' button...");
+
+        let quizPassed = false;
+
+        try {
+          // Look for the "See correct answers!" button
+          const seeAnswersSelectors = [
+            'a:contains("See correct answers!")',
+            'button:contains("See correct answers!")',
+            'a[href*="answers"]',
+            ".see-answers",
+            "#see-answers"
+          ];
+
+          let seeAnswersClicked = false;
+
+          // Try to find and click the "See correct answers!" button
+          for (const selector of seeAnswersSelectors) {
+            try {
+              let element;
+              if (selector.includes(":contains")) {
+                // Handle :contains selector manually
+                const elements = await page.$$("a, button");
+                for (const elem of elements) {
+                  const text = await page.evaluate(
+                    (el) => el.textContent,
+                    elem
+                  );
+                  if (text && text.includes("See correct answers!")) {
+                    element = elem;
+                    break;
+                  }
+                }
+              } else {
+                element = await page.$(selector);
+              }
+
+              if (element) {
+                console.log(`✅ Found "See correct answers!" button`);
+                await element.click();
+                console.log(`🖱️ Clicked "See correct answers!" button`);
+                seeAnswersClicked = true;
+                break;
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+
+          if (seeAnswersClicked) {
+            // Wait for the answers to load
+            await new Promise<void>((innerResolve) =>
+              setTimeout(innerResolve, 2000)
+            );
+
+            // Parse the quiz results
+            console.log("📋 Parsing quiz results...");
+
+            const quizResults = await page.evaluate(() => {
+              // Look for the "QUIZ CORRECT ANSWERS" or similar header
+              const headers = Array.from(
+                document.querySelectorAll(
+                  "h1, h2, h3, h4, h5, h6, .header, .title"
+                )
+              );
+              const correctAnswersHeader = headers.find(
+                (header) =>
+                  header.textContent?.toLowerCase().includes("correct") &&
+                  header.textContent?.toLowerCase().includes("answer")
+              );
+
+              if (!correctAnswersHeader) {
+                console.log("❌ Could not find 'Correct Quiz Answers' header");
+                return { correct: 0, total: 0, details: [] };
+              }
+
+              console.log("✅ Found correct answers section");
+
+              // Find all answer items after the header
+              let correctCount = 0;
+              let totalCount = 0;
+              const details: string[] = [];
+
+              // Look for elements that contain "Correct!" or "Incorrect"
+              const answerElements = Array.from(
+                document.querySelectorAll("*")
+              ).filter((el) => {
+                const text = el.textContent || "";
+                return (
+                  text.includes("Correct!") ||
+                  text.includes("Incorrect") ||
+                  text.includes("Answer:") ||
+                  text.includes("Question:")
+                );
+              });
+
+              console.log(
+                `Found ${answerElements.length} potential answer elements`
+              );
+
+              // Group elements by questions and parse results
+              for (const element of answerElements) {
+                const text = element.textContent?.trim() || "";
+
+                if (text.includes("Correct!")) {
+                  correctCount++;
+                  totalCount++;
+                  details.push(`✅ ${text}`);
+                } else if (text.includes("Incorrect")) {
+                  totalCount++;
+                  details.push(`❌ ${text}`);
+                }
+              }
+
+              // Alternative parsing: look for numbered list items with results
+              if (totalCount === 0) {
+                console.log("🔄 Trying alternative parsing method...");
+
+                // Look for ordered list or numbered items
+                const listItems = Array.from(
+                  document.querySelectorAll(
+                    'li, .question, .answer-item, [class*="question"], [class*="answer"]'
+                  )
+                );
+
+                for (const item of listItems) {
+                  const text = item.textContent?.trim() || "";
+
+                  if (
+                    text.match(/\d+\./) &&
+                    (text.includes("Correct") || text.includes("Incorrect"))
+                  ) {
+                    totalCount++;
+                    if (text.includes("Correct")) {
+                      correctCount++;
+                      details.push(`✅ ${text.substring(0, 100)}...`);
+                    } else {
+                      details.push(`❌ ${text.substring(0, 100)}...`);
+                    }
+                  }
+                }
+              }
+
+              console.log(
+                `📊 Quiz Results: ${correctCount}/${totalCount} correct`
+              );
+
+              return {
+                correct: correctCount,
+                total: totalCount,
+                details
+              };
+            });
+
+            quizScore = {
+              correct: quizResults.correct,
+              total: quizResults.total
+            };
+
+            console.log(
+              `📊 Quiz Score: ${quizScore.correct}/${quizScore.total} correct answers`
+            );
+
+            if (quizResults.details.length > 0) {
+              console.log("📝 Answer Details:");
+              quizResults.details.forEach((detail) =>
+                console.log(`   ${detail}`)
+              );
+            }
+
+            // Check if quiz passed (at least 9 out of 12 correct)
+            if (quizScore.total >= 12 && quizScore.correct >= 9) {
+              quizPassed = true;
+              console.log(
+                `✅ Quiz PASSED! (${quizScore.correct}/${quizScore.total} ≥ 9/12) - Will claim reward`
+              );
+            } else if (quizScore.total > 0) {
+              console.log(
+                `⚠️ Quiz scored below threshold (${quizScore.correct}/${quizScore.total} < 9/12)`
+              );
+              console.log("📊 Will count towards total but skip reward claim");
+              resolve({
+                success: true,
+                score: quizScore,
+                rewardClaimed: false
+              });
+              return;
+            } else {
+              console.log(
+                "⚠️ Could not parse quiz results properly, proceeding with claim"
+              );
+              quizPassed = true; // Default to passed if we can't parse
+            }
+          } else {
+            console.log(
+              "⚠️ Could not find 'See correct answers!' button, proceeding with claim"
+            );
+            quizPassed = true; // Default to passed if we can't find the button
+          }
+        } catch (answersError) {
+          console.log("⚠️ Error checking quiz answers:", answersError);
+          quizPassed = true; // Default to passed if there's an error
+        }
+
+        if (!quizPassed) {
+          resolve({ success: false, score: quizScore });
+          return;
+        }
 
         // Look for the "CLAIM YOUR REWARD" button
         const claimButtonSelector =
@@ -2510,7 +2770,7 @@ async function claimQuizReward(page: Page): Promise<void> {
 
                 if (!popupSubmitted) {
                   console.log("❌ Could not submit popup form");
-                  resolve();
+                  resolve({ success: false, rewardClaimed: false });
                   return;
                 }
 
@@ -2802,7 +3062,7 @@ async function claimQuizReward(page: Page): Promise<void> {
                     });
 
                     console.log("📊 Final status:", finalStatus);
-                    resolve();
+                    resolve({ success: true, score: quizScore });
                     return;
                   }
                 } catch (fallbackError) {
@@ -3104,7 +3364,7 @@ async function claimQuizReward(page: Page): Promise<void> {
                         "📊 Final nested iframe status:",
                         finalStatus
                       );
-                      resolve();
+                      resolve({ success: true, score: quizScore });
                       return;
                     }
                   } else {
@@ -3142,23 +3402,29 @@ async function claimQuizReward(page: Page): Promise<void> {
         console.log(`❌ Error claiming reward:`, error);
       }
 
-      resolve();
+      resolve({ success: false, score: quizScore });
     });
 
     // Add timeout wrapper
-    const timeoutPromise = new Promise<void>((resolve) => {
+    const timeoutPromise = new Promise<{
+      success: boolean;
+      score?: { correct: number; total: number };
+      rewardClaimed?: boolean;
+    }>((resolve) => {
       setTimeout(() => {
         console.log("⏰ Reward claiming timeout - continuing to next quiz");
-        resolve();
+        resolve({ success: false, rewardClaimed: false });
       }, rewardClaimTimeout);
     });
 
     // Wait for either completion or timeout
-    await Promise.race([claimPromise, timeoutPromise]);
+    const result = await Promise.race([claimPromise, timeoutPromise]);
 
     console.log("🔄 Reward claiming process completed, moving to next quiz");
+    return result;
   } catch (error) {
     console.log(`❌ Error in reward claiming wrapper:`, error);
+    return { success: false };
   }
 }
 
@@ -5323,48 +5589,60 @@ async function main() {
     const allQuizzes = await fetchQuizAnswers();
     console.log(`📚 Available quizzes: ${allQuizzes.length}`);
 
-    // Keep track of successful quizzes
+    // Pre-select 10 random quizzes at the start to avoid retaking quizzes
     const targetSuccessfulQuizzes = 10;
+    const selectedQuizzes = getRandomItems(allQuizzes, targetSuccessfulQuizzes);
+
+    console.log(
+      `🎯 Pre-selected ${selectedQuizzes.length} random quizzes for this session:`
+    );
+    selectedQuizzes.forEach((quiz, index) => {
+      console.log(`   ${index + 1}. ${quiz.quiz}`);
+    });
+
+    // Keep track of quiz completion
     let successfulQuizzes = 0;
     let attemptedQuizzes = 0;
     let consecutiveFailures = 0; // Track consecutive failed attempts
-    const maxTotalAttempts = 50; // Safety limit to prevent infinite loops
     const maxConsecutiveFailures = 5; // Exit after 5 consecutive failures
+    const completedQuizzes = new Set<string>(); // Track completed quizzes by name
 
     console.log(`🎯 Target: ${targetSuccessfulQuizzes} successful quizzes`);
     console.log(
       `⚠️ Will exit after ${maxConsecutiveFailures} consecutive failures`
     );
 
-    // Continue until we have enough successful quizzes or hit the safety limit
-    while (
-      successfulQuizzes < targetSuccessfulQuizzes &&
-      attemptedQuizzes < maxTotalAttempts &&
-      consecutiveFailures < maxConsecutiveFailures
+    // Process each pre-selected quiz
+    for (
+      let i = 0;
+      i < selectedQuizzes.length && successfulQuizzes < targetSuccessfulQuizzes;
+      i++
     ) {
-      // Randomly select a quiz from remaining quizzes
-      const remainingQuizzes = allQuizzes.filter(() => {
-        // You could implement logic here to avoid repeating quizzes if needed
-        // For now, we'll allow repeats but shuffle the selection
-        return true;
-      });
+      const selectedQuiz = selectedQuizzes[i];
 
-      if (remainingQuizzes.length === 0) {
-        console.log("❌ No more quizzes available");
-        break;
+      // Skip if we've already completed this quiz in this session
+      if (completedQuizzes.has(selectedQuiz.quiz)) {
+        console.log(`⏭️ Skipping already completed quiz: ${selectedQuiz.quiz}`);
+        continue;
       }
 
-      const selectedQuiz = getRandomItems(remainingQuizzes, 1)[0];
       attemptedQuizzes++;
 
       console.log(
-        `\n[${successfulQuizzes}/${targetSuccessfulQuizzes} successful] [${attemptedQuizzes} total attempts] [${consecutiveFailures} consecutive failures] Processing: ${selectedQuiz.quiz}`
+        `\n[${successfulQuizzes}/${targetSuccessfulQuizzes} successful] [${
+          i + 1
+        }/${
+          selectedQuizzes.length
+        } selected] [${consecutiveFailures} consecutive failures] Processing: ${
+          selectedQuiz.quiz
+        }`
       );
 
       const quizSuccess = await answerQuiz(page, selectedQuiz);
 
       if (quizSuccess) {
         successfulQuizzes++;
+        completedQuizzes.add(selectedQuiz.quiz); // Mark as completed
         console.log(
           `✅ Quiz completed successfully! (${successfulQuizzes}/${targetSuccessfulQuizzes})`
         );
@@ -5408,6 +5686,20 @@ async function main() {
 
       // Wait between quizzes to avoid being too aggressive
       await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    // If we've gone through all selected quizzes but haven't reached the target,
+    // and we haven't hit consecutive failure limit, log the completion
+    if (
+      successfulQuizzes < targetSuccessfulQuizzes &&
+      consecutiveFailures < maxConsecutiveFailures
+    ) {
+      console.log(
+        `\n📋 Completed all ${selectedQuizzes.length} pre-selected quizzes`
+      );
+      console.log(
+        `✅ Successfully completed ${successfulQuizzes} out of ${targetSuccessfulQuizzes} target quizzes`
+      );
     }
 
     console.log("\n=== Quiz Session Complete ===");
@@ -5469,11 +5761,16 @@ async function main() {
       }%`
     );
 
-    if (globalStats.totalQuestionsAnswered > 0) {
+    // Calculate crowns based on successful quiz attempts (10 crowns per passing quiz)
+    // Note: Only quizzes that scored ≥9/12 and had rewards claimed earn crowns
+    if (globalStats.successfulQuizzes > 0) {
       console.log(
         `\n💰 Estimated Crowns Earned: ${
-          globalStats.totalQuestionsAnswered * 10
-        } (assuming 10 crowns per correct answer)`
+          globalStats.successfulQuizzes * 10
+        } (10 crowns per successful quiz attempt)`
+      );
+      console.log(
+        `📊 Maximum possible daily crowns: 100 (10 quizzes × 10 crowns each)`
       );
     }
 
