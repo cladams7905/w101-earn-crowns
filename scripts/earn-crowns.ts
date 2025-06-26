@@ -151,7 +151,8 @@ async function updateQuizAnswersInLocalFile(): Promise<void> {
 // Function to query Google Gemini for unknown questions
 async function queryGeminiForAnswer(
   question: string,
-  availableAnswers: string[]
+  availableAnswers: string[],
+  quizName?: string
 ): Promise<string | null> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
 
@@ -173,7 +174,11 @@ async function queryGeminiForAnswer(
       .map((answer, index) => `${String.fromCharCode(65 + index)}. ${answer}`)
       .join("\n");
 
-    const prompt = `Based on the following question, please pick the most correct answer from the selection below. Respond with ONLY the text of the correct answer (not the letter, not JSON, just the answer text itself).
+    const contextPrefix = quizName
+      ? `You are answering a question from a trivia quiz entitled "${quizName}". `
+      : "";
+
+    const prompt = `${contextPrefix}Based on the following question, please pick the most correct answer from the selection below. For each question, consider the specific context and theme of this quiz when selecting your answer. Respond with ONLY the text of the correct answer (not the letter, not JSON, just the answer text itself).
 
 Question: ${question}
 
@@ -884,7 +889,8 @@ async function findAnswerForQuestion(
 
   const geminiAnswer = await queryGeminiForAnswer(
     questionText,
-    availableAnswers
+    availableAnswers,
+    quiz.quiz
   );
 
   if (geminiAnswer) {
