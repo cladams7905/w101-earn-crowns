@@ -17,6 +17,11 @@ on:
           - "false"
           - "true"
 
+# Grant permissions for the workflow to write to the repository
+permissions:
+  contents: write
+  actions: read
+
 # Global environment variables to prevent Puppeteer from downloading Chromium
 env:
   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
@@ -32,6 +37,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -116,6 +123,8 @@ jobs:
 
       - name: Commit and push changes
         if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Configure git
           git config --global user.name "github-actions[bot]"

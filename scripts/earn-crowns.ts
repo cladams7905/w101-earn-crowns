@@ -20,14 +20,6 @@ if (!isCI) {
 
   const stealthPlugin = StealthPlugin();
 
-  // Optional: Log available and enabled evasions for debugging
-  console.log("🛡️ Available stealth evasions:", [
-    ...stealthPlugin.availableEvasions
-  ]);
-  console.log("✅ Enabled stealth evasions:", [
-    ...stealthPlugin.enabledEvasions
-  ]);
-
   // Add stealth plugin only for local environments
   puppeteerExtra.use(stealthPlugin);
   puppeteer = puppeteerExtra;
@@ -86,7 +78,6 @@ let quizAnswersUpdated = false;
 // Function to fetch quiz answers from local file
 async function fetchQuizAnswers(): Promise<Quiz[]> {
   if (cachedQuizAnswers) {
-    console.log("✅ Using cached quiz answers");
     return cachedQuizAnswers;
   }
 
@@ -273,8 +264,6 @@ Respond with only the answer text that is most correct.`;
     cleanedResponse = cleanedResponse.replace(/^\w+:\s*/, ""); // Remove "Answer: ", etc.
     cleanedResponse = cleanedResponse.trim();
 
-    console.log("🧹 Cleaned Gemini response:", cleanedResponse);
-
     // Find the best matching answer from available options
     let bestMatch = null;
     let bestMatchScore = 0;
@@ -392,17 +381,6 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
 
   // Check all frames for reCAPTCHA content
   const frames = await page.frames();
-  console.log(`📱 Found ${frames.length} frames on the page`);
-
-  // Log all frame URLs for debugging
-  for (let i = 0; i < frames.length; i++) {
-    try {
-      const frameUrl = frames[i].url();
-      console.log(`📱 Frame ${i}: ${frameUrl}`);
-    } catch (e) {
-      console.log(`📱 Frame ${i}: Unable to access URL`);
-    }
-  }
 
   let reCaptchaFrame = null;
   let reCaptchaSiteKey = null;
@@ -411,7 +389,6 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
   for (const frame of frames) {
     try {
       const frameUrl = frame.url();
-      console.log(`🔍 Checking frame: ${frameUrl}`);
 
       if (
         frameUrl.includes("recaptcha") ||
@@ -423,7 +400,6 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
         (frameUrl.includes("wizard101.com") && frameUrl !== page.url()) ||
         frameUrl !== page.url() // Any iframe could potentially contain captcha
       ) {
-        console.log("✅ Found potential reCAPTCHA frame");
         reCaptchaFrame = frame;
 
         // Try to find site key in this frame or main page
@@ -529,7 +505,6 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
                 for (const selector of checkboxSelectors) {
                   const checkbox = document.querySelector(selector);
                   if (checkbox) {
-                    console.log(`🎯 Found checkbox with selector: ${selector}`);
                     (checkbox as HTMLElement).click();
                     return true;
                   }
@@ -544,7 +519,6 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
                 reCaptchaFrame !== page.mainFrame()
               ) {
                 try {
-                  console.log("🔄 Trying to click checkbox in frame...");
                   checkboxClicked = await reCaptchaFrame.evaluate(() => {
                     const checkboxSelectors = [
                       ".recaptcha-checkbox",
@@ -573,10 +547,7 @@ async function handleReCaptchaChallenge(page: Page): Promise<string | null> {
               }
 
               if (checkboxClicked) {
-                console.log("✅ Successfully clicked reCAPTCHA checkbox");
-
                 // Wait for challenge to appear
-                console.log("⏳ Waiting for visual challenge to appear...");
                 await new Promise((resolve) => setTimeout(resolve, 3000));
 
                 // Check if visual challenge appeared (this means we need TwoCaptcha)
@@ -866,9 +837,6 @@ async function findAnswerForQuestion(
 ): Promise<{ answer: string | null; source: "database" | "gemini" | null }> {
   const normalizedQuestion = normalizeText(questionText);
 
-  console.log(`🔍 Searching for question: "${questionText}"`);
-  console.log(`🔍 Normalized: "${normalizedQuestion}"`);
-
   // STEP 1: Look for EXACT matches first (highest priority)
   const exactMatches: QuizAnswer[] = [];
 
@@ -878,16 +846,11 @@ async function findAnswerForQuestion(
     // True exact match (after normalization)
     if (normalizedQuizQuestion === normalizedQuestion) {
       exactMatches.push(answerObj);
-      console.log(`✅ Found EXACT match: "${answerObj.question}"`);
     }
   }
 
   // If we have exact matches, prioritize them
   if (exactMatches.length > 0) {
-    console.log(
-      `🎯 Found ${exactMatches.length} exact match(es), checking answers...`
-    );
-
     // Check which exact matches have valid answers available on the page
     const validExactMatches = exactMatches.filter((match) => {
       const candidateAnswer = match.answer;
@@ -911,161 +874,12 @@ async function findAnswerForQuestion(
       );
 
       if (matchingAvailableAnswer) {
-        console.log(
-          `✅ Selected EXACT match answer: "${selectedMatch.answer}" -> "${matchingAvailableAnswer}"`
-        );
         return { answer: selectedMatch.answer, source: "database" };
       }
-    } else {
-      console.log(
-        `⚠️ Found ${exactMatches.length} exact matches but none have valid answers for current page`
-      );
-      console.log(
-        `Database answers were: ${exactMatches.map((m) => m.answer).join(", ")}`
-      );
-      console.log(`Page answers are: ${availableAnswers.join(", ")}`);
     }
   }
 
-  // STEP 2: Look for substring matches (medium priority)
-  const substringMatches: { question: QuizAnswer; similarity: number }[] = [];
-
-  for (const answerObj of quiz.answers) {
-    const normalizedQuizQuestion = normalizeText(answerObj.question);
-
-    // Skip if we already found this as an exact match
-    if (normalizedQuizQuestion === normalizedQuestion) {
-      continue;
-    }
-
-    // Check for substring matching
-    if (
-      normalizedQuizQuestion.includes(normalizedQuestion) ||
-      normalizedQuestion.includes(normalizedQuizQuestion)
-    ) {
-      substringMatches.push({ question: answerObj, similarity: 0.9 });
-      console.log(`📝 Found substring match: "${answerObj.question}"`);
-    }
-  }
-
-  if (substringMatches.length > 0) {
-    console.log(
-      `🔍 Found ${substringMatches.length} substring match(es), checking answers...`
-    );
-
-    // Check which substring matches have valid answers
-    const validSubstringMatches = substringMatches.filter((match) => {
-      const candidateAnswer = match.question.answer;
-      return availableAnswers.some(
-        (available) =>
-          available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
-          candidateAnswer.toLowerCase().includes(available.toLowerCase())
-      );
-    });
-
-    if (validSubstringMatches.length > 0) {
-      const bestSubstringMatch = validSubstringMatches[0];
-
-      // Find the actual available answer text that matches
-      const matchingAvailableAnswer = availableAnswers.find(
-        (available) =>
-          available
-            .toLowerCase()
-            .includes(bestSubstringMatch.question.answer.toLowerCase()) ||
-          bestSubstringMatch.question.answer
-            .toLowerCase()
-            .includes(available.toLowerCase())
-      );
-
-      if (matchingAvailableAnswer) {
-        console.log(
-          `✅ Selected substring match answer: "${bestSubstringMatch.question.answer}" -> "${matchingAvailableAnswer}"`
-        );
-        return {
-          answer: bestSubstringMatch.question.answer,
-          source: "database"
-        };
-      }
-    }
-  }
-
-  // STEP 3: Look for similarity-based matches (lowest priority)
-  const similarityMatches: { question: QuizAnswer; similarity: number }[] = [];
-
-  for (const answerObj of quiz.answers) {
-    const normalizedQuizQuestion = normalizeText(answerObj.question);
-
-    // Skip if we already processed this question
-    if (
-      normalizedQuizQuestion === normalizedQuestion ||
-      normalizedQuizQuestion.includes(normalizedQuestion) ||
-      normalizedQuestion.includes(normalizedQuizQuestion)
-    ) {
-      continue;
-    }
-
-    // Check similarity-based matching for fill-in-the-blank questions
-    const similarity = getTextSimilarity(questionText, answerObj.question);
-    if (similarity > 0.6) {
-      // 60% similarity threshold
-      similarityMatches.push({ question: answerObj, similarity });
-      console.log(
-        `🔄 Found similarity match (${(similarity * 100).toFixed(1)}%): "${
-          answerObj.question
-        }"`
-      );
-    }
-  }
-
-  if (similarityMatches.length > 0) {
-    console.log(
-      `🔄 Found ${similarityMatches.length} similarity match(es), checking answers...`
-    );
-
-    // Sort by similarity (highest first)
-    similarityMatches.sort((a, b) => b.similarity - a.similarity);
-
-    // Check which similarity matches have valid answers
-    const validSimilarityMatches = similarityMatches.filter((match) => {
-      const candidateAnswer = match.question.answer;
-      return availableAnswers.some(
-        (available) =>
-          available.toLowerCase().includes(candidateAnswer.toLowerCase()) ||
-          candidateAnswer.toLowerCase().includes(available.toLowerCase())
-      );
-    });
-
-    if (validSimilarityMatches.length > 0) {
-      const bestSimilarityMatch = validSimilarityMatches[0];
-
-      // Find the actual available answer text that matches
-      const matchingAvailableAnswer = availableAnswers.find(
-        (available) =>
-          available
-            .toLowerCase()
-            .includes(bestSimilarityMatch.question.answer.toLowerCase()) ||
-          bestSimilarityMatch.question.answer
-            .toLowerCase()
-            .includes(available.toLowerCase())
-      );
-
-      if (matchingAvailableAnswer) {
-        console.log(
-          `✅ Selected similarity match answer: "${
-            bestSimilarityMatch.question.answer
-          }" -> "${matchingAvailableAnswer}" (${(
-            bestSimilarityMatch.similarity * 100
-          ).toFixed(1)}%)`
-        );
-        return {
-          answer: bestSimilarityMatch.question.answer,
-          source: "database"
-        };
-      }
-    }
-  }
-
-  // STEP 4: No matches found in database, try Gemini
+  // STEP 2: No exact matches found, try Gemini immediately
   console.log("❌ No matching questions found in database, trying Gemini...");
 
   const geminiAnswer = await queryGeminiForAnswer(
@@ -1100,10 +914,7 @@ async function debugCursorVisibility(page: Page): Promise<void> {
       };
     });
 
-    console.log("🔍 Cursor debug info:", cursorInfo);
-
     if (cursorInfo.hasHiddenCursor) {
-      console.log("⚠️ Hidden cursor detected! Attempting to fix...");
       await ensureCursorVisibility(page);
     }
   } catch (error) {
@@ -1175,7 +986,6 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
     await ensureCursorVisibility(page);
 
     // Wait a few seconds for the page to fully render
-    console.log("⏳ Waiting for page to render...");
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Check if quiz loaded properly by looking for essential elements
@@ -1205,8 +1015,6 @@ async function answerQuiz(page: Page, quiz: Quiz): Promise<boolean> {
         title: document.title
       };
     });
-
-    console.log("🔍 Quiz load check:", quizLoadCheck);
 
     // Determine if quiz loaded successfully
     if (quizLoadCheck.hasError || quizLoadCheck.isLoginPage) {
@@ -2301,158 +2109,167 @@ async function claimQuizReward(page: Page): Promise<{
           if (popupFrame) {
             console.log("🎯 Processing captcha popup...");
 
-            // Apply stealth enhancements to the popup frame
-            try {
-              await popupFrame.evaluate(() => {
-                // Remove automation indicators
-                Object.defineProperty(navigator, "webdriver", {
-                  get: () => undefined
-                });
-
-                // Add realistic browser properties
-                Object.defineProperty(navigator, "plugins", {
-                  get: () => [1, 2, 3, 4, 5] // Fake some plugins
-                });
-
-                // Override automation detection
-                (window as unknown as Record<string, unknown>).chrome = {
-                  runtime: {},
-                  app: { isInstalled: false },
-                  csi: () => {},
-                  loadTimes: () => {}
-                };
-
-                // Add human-like properties
-                Object.defineProperty(navigator, "hardwareConcurrency", {
-                  get: () => 4
-                });
-
-                // Handle OneTrust cookie consent to prevent script blocking
-                try {
-                  (
-                    window as unknown as Record<string, unknown>
-                  ).OnetrustActiveGroups = "C0001,C0002,C0003,C0004,C0005";
-                  (
-                    window as unknown as Record<string, unknown>
-                  ).OptanonWrapperCount = 1;
-
-                  // Set consent preferences to accept all
-                  localStorage.setItem(
-                    "OptanonConsent",
-                    "isGpcEnabled=0&datestamp=Thu+Dec+26+2024+12%3A00%3A00+GMT-0500+(EST)&version=202409.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0005%3A1&AwaitingReconsent=false"
-                  );
-                  localStorage.setItem(
-                    "OptanonAlertBoxClosed",
-                    new Date().toISOString()
-                  );
-
-                  // Simulate cookie consent acceptance
-                  if (
-                    typeof (window as unknown as Record<string, unknown>)
-                      .OneTrust !== "undefined"
-                  ) {
-                    const OneTrust = (
-                      window as unknown as Record<string, unknown>
-                    ).OneTrust as Record<string, unknown>;
-                    if (typeof OneTrust.AllowAll === "function") {
-                      (OneTrust.AllowAll as () => void)();
-                    }
-                  }
-
-                  // Hide OneTrust banner if present in popup
-                  const oneTrustContainer = document.getElementById(
-                    "onetrust-consent-sdk"
-                  );
-                  if (oneTrustContainer) {
-                    oneTrustContainer.style.display = "none";
-                  }
-
-                  // Also hide any other cookie consent popups
-                  const cookieElements = [
-                    document.getElementById("onetrust-banner-sdk"),
-                    document.querySelector('[class*="cookie-banner"]'),
-                    document.querySelector('[id*="cookie-banner"]')
-                  ].filter(Boolean);
-
-                  cookieElements.forEach((el) => {
-                    if (el) {
-                      (el as HTMLElement).style.display = "none";
-                    }
+            // Apply stealth enhancements to the popup frame (only in non-CI environments)
+            if (!isCI) {
+              try {
+                await popupFrame.evaluate(() => {
+                  // Remove automation indicators
+                  Object.defineProperty(navigator, "webdriver", {
+                    get: () => undefined
                   });
 
-                  console.log(
-                    "✅ OneTrust cookie consent handled and localStorage set"
-                  );
-                } catch (cookieError) {
-                  console.log("⚠️ OneTrust handling error:", cookieError);
-                }
-
-                // Set session variables to appear as legitimate user
-                try {
-                  (window as unknown as Record<string, unknown>).kiLoggedIn =
-                    true;
-                  (window as unknown as Record<string, unknown>).kiPayingUser =
-                    true;
-                  (window as unknown as Record<string, unknown>).kiIs18Plus =
-                    true;
-                  (
-                    window as unknown as Record<string, unknown>
-                  ).kiBillingActive = true;
-                  (
-                    window as unknown as Record<string, unknown>
-                  ).isReCaptchaUsed = true;
-                  console.log(
-                    "✅ Session variables set for authenticated user"
-                  );
-                } catch (sessionError) {
-                  console.log("⚠️ Session variable error:", sessionError);
-                }
-
-                // Disable common bot detection methods
-                try {
-                  // Override common bot detection properties
-                  Object.defineProperty(window, "outerHeight", {
-                    get: () => 1080
-                  });
-                  Object.defineProperty(window, "outerWidth", {
-                    get: () => 1920
+                  // Add realistic browser properties
+                  Object.defineProperty(navigator, "plugins", {
+                    get: () => [1, 2, 3, 4, 5] // Fake some plugins
                   });
 
-                  // Add realistic timing functions
-                  const originalPerformance = window.performance;
-                  (window as unknown as Record<string, unknown>).performance = {
-                    ...originalPerformance,
-                    now: () => Date.now() + Math.random() * 1000
+                  // Override automation detection
+                  (window as unknown as Record<string, unknown>).chrome = {
+                    runtime: {},
+                    app: { isInstalled: false },
+                    csi: () => {},
+                    loadTimes: () => {}
                   };
 
-                  // Ensure reCAPTCHA APIs are available
-                  if (
-                    typeof (window as unknown as Record<string, unknown>)
-                      .grecaptcha === "undefined"
-                  ) {
-                    (window as unknown as Record<string, unknown>).grecaptcha =
+                  // Add human-like properties
+                  Object.defineProperty(navigator, "hardwareConcurrency", {
+                    get: () => 4
+                  });
+
+                  // Handle OneTrust cookie consent to prevent script blocking
+                  try {
+                    (
+                      window as unknown as Record<string, unknown>
+                    ).OnetrustActiveGroups = "C0001,C0002,C0003,C0004,C0005";
+                    (
+                      window as unknown as Record<string, unknown>
+                    ).OptanonWrapperCount = 1;
+
+                    // Set consent preferences to accept all
+                    localStorage.setItem(
+                      "OptanonConsent",
+                      "isGpcEnabled=0&datestamp=Thu+Dec+26+2024+12%3A00%3A00+GMT-0500+(EST)&version=202409.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0005%3A1&AwaitingReconsent=false"
+                    );
+                    localStorage.setItem(
+                      "OptanonAlertBoxClosed",
+                      new Date().toISOString()
+                    );
+
+                    // Simulate cookie consent acceptance
+                    if (
+                      typeof (window as unknown as Record<string, unknown>)
+                        .OneTrust !== "undefined"
+                    ) {
+                      const OneTrust = (
+                        window as unknown as Record<string, unknown>
+                      ).OneTrust as Record<string, unknown>;
+                      if (typeof OneTrust.AllowAll === "function") {
+                        (OneTrust.AllowAll as () => void)();
+                      }
+                    }
+
+                    // Hide OneTrust banner if present in popup
+                    const oneTrustContainer = document.getElementById(
+                      "onetrust-consent-sdk"
+                    );
+                    if (oneTrustContainer) {
+                      oneTrustContainer.style.display = "none";
+                    }
+
+                    // Also hide any other cookie consent popups
+                    const cookieElements = [
+                      document.getElementById("onetrust-banner-sdk"),
+                      document.querySelector('[class*="cookie-banner"]'),
+                      document.querySelector('[id*="cookie-banner"]')
+                    ].filter(Boolean);
+
+                    cookieElements.forEach((el) => {
+                      if (el) {
+                        (el as HTMLElement).style.display = "none";
+                      }
+                    });
+
+                    console.log(
+                      "✅ OneTrust cookie consent handled and localStorage set"
+                    );
+                  } catch (cookieError) {
+                    console.log("⚠️ OneTrust handling error:", cookieError);
+                  }
+
+                  // Set session variables to appear as legitimate user
+                  try {
+                    (window as unknown as Record<string, unknown>).kiLoggedIn =
+                      true;
+                    (
+                      window as unknown as Record<string, unknown>
+                    ).kiPayingUser = true;
+                    (window as unknown as Record<string, unknown>).kiIs18Plus =
+                      true;
+                    (
+                      window as unknown as Record<string, unknown>
+                    ).kiBillingActive = true;
+                    (
+                      window as unknown as Record<string, unknown>
+                    ).isReCaptchaUsed = true;
+                    console.log(
+                      "✅ Session variables set for authenticated user"
+                    );
+                  } catch (sessionError) {
+                    console.log("⚠️ Session variable error:", sessionError);
+                  }
+
+                  // Disable common bot detection methods
+                  try {
+                    // Override common bot detection properties
+                    Object.defineProperty(window, "outerHeight", {
+                      get: () => 1080
+                    });
+                    Object.defineProperty(window, "outerWidth", {
+                      get: () => 1920
+                    });
+
+                    // Add realistic timing functions
+                    const originalPerformance = window.performance;
+                    (window as unknown as Record<string, unknown>).performance =
                       {
+                        ...originalPerformance,
+                        now: () => Date.now() + Math.random() * 1000
+                      };
+
+                    // Ensure reCAPTCHA APIs are available
+                    if (
+                      typeof (window as unknown as Record<string, unknown>)
+                        .grecaptcha === "undefined"
+                    ) {
+                      (
+                        window as unknown as Record<string, unknown>
+                      ).grecaptcha = {
                         ready: (callback: () => void) =>
                           setTimeout(callback, 100),
                         execute: () => Promise.resolve("mock-token"),
                         render: () => 1,
                         reset: () => {}
                       };
+                    }
+
+                    console.log("✅ Bot detection countermeasures applied");
+                  } catch (botError) {
+                    console.log("⚠️ Bot detection error:", botError);
                   }
 
-                  console.log("✅ Bot detection countermeasures applied");
-                } catch (botError) {
-                  console.log("⚠️ Bot detection error:", botError);
-                }
-
+                  console.log(
+                    "🛡️ Applied comprehensive stealth enhancements to popup frame"
+                  );
+                });
+              } catch (stealthError) {
                 console.log(
-                  "🛡️ Applied comprehensive stealth enhancements to popup frame"
+                  "⚠️ Could not apply stealth to popup frame:",
+                  stealthError
                 );
-              });
-            } catch (stealthError) {
+              }
+            } else {
               console.log(
-                "⚠️ Could not apply stealth to popup frame:",
-                stealthError
+                "🔧 Skipping stealth iframe injection in CI environment"
               );
             }
 
@@ -3618,12 +3435,6 @@ async function main() {
 
   const allArgs = [...baseArgs, ...ciArgs, ...debugArgs];
 
-  console.log(
-    `🔧 Browser arguments: ${allArgs.length} args configured for ${
-      isCI ? "CI" : "local"
-    } environment`
-  );
-
   // Launch browser with stealth-optimized settings
   console.log("🚀 Launching browser...");
 
@@ -3708,10 +3519,6 @@ async function main() {
         break;
       } catch (pageCreateError) {
         pageCreateRetries++;
-        console.log(
-          `❌ Page creation attempt ${pageCreateRetries}/${maxPageCreateRetries} failed:`,
-          pageCreateError.message
-        );
 
         if (pageCreateRetries >= maxPageCreateRetries) {
           throw new Error(
@@ -3720,14 +3527,12 @@ async function main() {
         }
 
         // Wait before retry
-        console.log("⏳ Waiting before page creation retry...");
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
     // Wait a moment for the page to stabilize in CI
     if (isCI) {
-      console.log("⏳ Waiting for page to stabilize in CI environment...");
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Double-check page is still valid after stabilization
@@ -3795,7 +3600,6 @@ async function main() {
             return originalConsoleDebug.apply(console, args);
           };
         });
-        console.log("✅ Basic stealth measures applied for CI environment");
       } catch (stealthError) {
         console.log("⚠️ CI stealth setup failed:", stealthError);
       }
@@ -3804,9 +3608,7 @@ async function main() {
     // Set realistic viewport (skip for CI since we set defaultViewport)
     if (!isCI) {
       try {
-        console.log("🖼️ Setting viewport...");
         await page.setViewport({ width: 1366, height: 768 });
-        console.log("✅ Viewport set successfully");
       } catch (viewportError) {
         console.log(
           "⚠️ Viewport setting failed, continuing:",
@@ -3882,7 +3684,6 @@ async function main() {
 
       // Add extra stabilization for CI environments
       if (isCI) {
-        console.log("⏳ Additional CI stabilization before navigation...");
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Verify page is still valid after wait
@@ -3895,8 +3696,6 @@ async function main() {
         waitUntil: isCI ? "domcontentloaded" : "networkidle0", // Use faster wait condition for CI
         timeout: isCI ? 60000 : 30000 // Longer timeout for CI
       });
-
-      console.log("✅ Navigation completed successfully");
     } catch (navigationError) {
       console.error("❌ Navigation failed:", navigationError.message);
 
@@ -3908,7 +3707,6 @@ async function main() {
         try {
           // Create a new page if the current one is problematic
           const newPage = await browser.newPage();
-          console.log("✅ Created recovery page");
 
           await newPage.goto("https://www.wizard101.com/game", {
             waitUntil: "domcontentloaded",
