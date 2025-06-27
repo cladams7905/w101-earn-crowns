@@ -131,7 +131,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # Check if quiz-answers.json has been modified
-          if git diff --name-only | grep -q "scripts/quiz-answers.json"; then
+          if [ -n "$(git status --porcelain scripts/quiz-answers.json)" ]; then
             echo "quiz-answers.json has been modified, committing and pushing..."
             git add scripts/quiz-answers.json
             git commit -m "Auto-update quiz-answers.json from earn-crowns workflow [skip ci]"

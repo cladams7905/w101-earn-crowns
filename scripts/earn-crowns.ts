@@ -5582,6 +5582,20 @@ async function main() {
       `\n🎉 Session completed successfully! Thank you for using the automated quiz system.`
     );
     console.log(`${"🎊".repeat(20)}`);
+
+    // Update quiz answers in local file if any new answers were added
+    if (quizAnswersUpdated) {
+      console.log("\n📤 Final sync of quiz answers to local file...");
+      try {
+        await updateQuizAnswersInLocalFile();
+        console.log("✅ Quiz answers successfully synced to local file");
+      } catch (syncError) {
+        console.error(
+          "❌ Failed to sync quiz answers to local file:",
+          syncError
+        );
+      }
+    }
   } catch (error) {
     console.error("💥 An error occurred:", error);
 
