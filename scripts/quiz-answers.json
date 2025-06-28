@@ -186,6 +186,54 @@
       {
         "question": "All grown-ups were once children—but only few of them remember it.",
         "answer": "The Little Prince"
+      },
+      {
+        "question": "\"Not all those who wander are lost.\"",
+        "answer": "The Lord of the Rings"
+      },
+      {
+        "question": "\"It is to the credit of human nature that, except where its selfishness is brought into play, it loves more readily than it hates.\"",
+        "answer": "Jane Eyre"
+      },
+      {
+        "question": "\"I was benevolent and good; misery made me a fiend. Make me happy, and I shall again be virtuous.\"",
+        "answer": "Frankenstein"
+      },
+      {
+        "question": "\"You don't know about me without you have read a book by the name of 'The Adventures of Tom Sawyer'; but that ain't no matter. That book was made by a Mr Mark Twain, and he told the truth, mainly.\"",
+        "answer": "The Adventures of Huckleberry Finn"
+      },
+      {
+        "question": "\"Anything worth dying for is certainly worth living for.\"",
+        "answer": "Catch-22"
+      },
+      {
+        "question": "\"Most people were heartless about turtles because a turtle's heart will beat for hours after it has been cut up and butchered. But the old man thought, I have such a heart too.\"",
+        "answer": "The Old Man and the Sea"
+      },
+      {
+        "question": "\"I wanted you to see what real courage is, instead of getting the idea that courage is a man with a gun in his hand. It's when you know you're licked before you begin but you begin anyway and you see it through no matter what.\"",
+        "answer": "To Kill a Mockingbird"
+      },
+      {
+        "question": "\"It was a pleasure to burn.\"",
+        "answer": "Farenheit 451"
+      },
+      {
+        "question": "\"All grown-ups were once children - but only few of them remember it.\"",
+        "answer": "The Little Prince"
+      },
+      {
+        "question": "\"I'm not afraid of storms, for I'm learning how to sail my ship.\"",
+        "answer": "Little Women"
+      },
+      {
+        "question": "\"All animals are equal, but some animals are more equal than others.\"",
+        "answer": "Animal Farm"
+      },
+      {
+        "question": "\"Call me Ishmael.\"",
+        "answer": "Moby Dick"
       }
     ]
   },
@@ -252,6 +300,26 @@
       {
         "question": "What is the brightest star in Cygnus?",
         "answer": "Deneb"
+      },
+      {
+        "question": "The constellation Libra represents a ___________.",
+        "answer": "Balance Scale"
+      },
+      {
+        "question": "The Auriga constellation is in the shape of a __________.",
+        "answer": "Charioteer"
+      },
+      {
+        "question": "The Gemini constellation represents _______.",
+        "answer": "Twins"
+      },
+      {
+        "question": "What is the brightest star in the Pegasus constellation?",
+        "answer": "Markab"
+      },
+      {
+        "question": "Canis Major is otherwise known as the Great _____.",
+        "answer": "Dog"
       }
     ]
   },
@@ -372,6 +440,10 @@
       {
         "question": "Discern",
         "answer": "to recognize the difference"
+      },
+      {
+        "question": "Euphemism",
+        "answer": "the substitution of a mild, indirect, or vague expression for one thought to be offensive, harsh, or blunt"
       }
     ]
   },
@@ -776,6 +848,26 @@
       {
         "question": "Who said \"Music must never offend the ear, but must please the listener, or, in other words, must never cease to be music.\"",
         "answer": "Wolfgang Amadeus Mozart"
+      },
+      {
+        "question": "Who said \"All I can do is be me, whoever that is.\"",
+        "answer": "Bob Dylan"
+      },
+      {
+        "question": "Who said \"Music is the weapon in the war of unhappiness.\"",
+        "answer": "Jason Mraz"
+      },
+      {
+        "question": "Who said \"Works of art make rules; rules do not make works of art.\"",
+        "answer": "Igor Stravinsky"
+      },
+      {
+        "question": "Who said \"I wanna show that gospel, country, blues, rhythm and blues, jazz, rock 'n' roll are all just really one thing. Those are the American music and that is the American culture.\"",
+        "answer": "Aretha Franklin"
+      },
+      {
+        "question": "Who said \"To play without passion is inexcusable!\"",
+        "answer": "Ludwig van Beethoven"
       }
     ]
   },
@@ -1134,6 +1226,18 @@
       {
         "question": "Which of the following is not a systemic artery?",
         "answer": "Pulmonary Artery"
+      },
+      {
+        "question": "What blood vessel carries oxygen-rich blood to the body?",
+        "answer": "Artery"
+      },
+      {
+        "question": "Which vein carries oxygen-rich blood to the heart from the lungs?",
+        "answer": "Pulmonary Veins"
+      },
+      {
+        "question": "What blood vessel returns oxygen-poor blood to the heart?",
+        "answer": "Vein"
       }
     ]
   },
@@ -1278,6 +1382,10 @@
       {
         "question": "Ice hockey is considered a ________ sport.",
         "answer": "Full Contact"
+      },
+      {
+        "question": "Ice Hockey became an organized sport in the ______.",
+        "answer": "Mid 1800's"
       }
     ]
   },
@@ -1492,6 +1600,26 @@
       {
         "question": "Norse Mythology is the mythology from what group of people?",
         "answer": "North Germanic"
+      },
+      {
+        "question": "Who was the goddess of old age?",
+        "answer": "Elli"
+      },
+      {
+        "question": "Who was the god of strength and son of Thor?",
+        "answer": "Magni"
+      },
+      {
+        "question": "Who was the goddess of wisdom?",
+        "answer": "Ve"
+      },
+      {
+        "question": "Who was the god of poetry, music and the harp?",
+        "answer": "Bragi"
+      },
+      {
+        "question": "Who was the god of thunder and battle?",
+        "answer": "Thor"
       }
     ]
   },
