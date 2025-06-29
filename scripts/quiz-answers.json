@@ -234,6 +234,14 @@
       {
         "question": "\"Call me Ishmael.\"",
         "answer": "Moby Dick"
+      },
+      {
+        "question": "\"The sky above the port was the color of television, tuned to a dead channel.\"",
+        "answer": "Neuromancer"
+      },
+      {
+        "question": "\"In spite of everything I still believe that people are really good at heart\"",
+        "answer": "The Diary of Anne Frank"
       }
     ]
   },
@@ -320,6 +328,14 @@
       {
         "question": "Canis Major is otherwise known as the Great _____.",
         "answer": "Dog"
+      },
+      {
+        "question": "What is the brightest star in the Leo constellation?",
+        "answer": "Regulus"
+      },
+      {
+        "question": "Aries is a constellation named after what animal?",
+        "answer": "Ram"
       }
     ]
   },
@@ -720,6 +736,10 @@
       {
         "question": "Who wrote The Lion, The Witch and the Wardrobe?",
         "answer": "C.S. Lewis"
+      },
+      {
+        "question": "Who wrote The Catcher in the Rye?",
+        "answer": "J.D. Salinger"
       }
     ]
   },
@@ -1020,6 +1040,14 @@
       {
         "question": "Who sings \"Beautiful\"?",
         "answer": "Christina Aguilera"
+      },
+      {
+        "question": "Who sings \"Always Be My Baby\"?",
+        "answer": "Mariah Carey"
+      },
+      {
+        "question": "Who sings \"I Walk the Line\"?",
+        "answer": "Johnny Cash"
       }
     ]
   },
@@ -1238,6 +1266,10 @@
       {
         "question": "What blood vessel returns oxygen-poor blood to the heart?",
         "answer": "Vein"
+      },
+      {
+        "question": "Which ventricle pumps oxygen-poor blood to the lungs?",
+        "answer": "Right ventricle"
       }
     ]
   },
@@ -1308,6 +1340,14 @@
       {
         "question": "\"Fat Tuesday\" is associated with which observance holiday?",
         "answer": "Mardi Gras"
+      },
+      {
+        "question": "Which US holiday traditionally marks the end of summer?",
+        "answer": "Labor Day"
+      },
+      {
+        "question": "Ramadan is a holiday associated with which religion?",
+        "answer": "Islam"
       }
     ]
   },
@@ -1386,6 +1426,14 @@
       {
         "question": "Ice Hockey became an organized sport in the ______.",
         "answer": "Mid 1800's"
+      },
+      {
+        "question": "In which country did ice hockey begin?",
+        "answer": "Canada"
+      },
+      {
+        "question": "When did ice hockey make its first appearance in the Winter Olympics?",
+        "answer": "1924"
       }
     ]
   },
@@ -1440,6 +1488,34 @@
       {
         "question": "How many times per second does a mosquito flap its wings?",
         "answer": "Five Hundred"
+      },
+      {
+        "question": "What percentage of all insects are harmful to humans?",
+        "answer": "1%"
+      },
+      {
+        "question": "Bees are found on every continent except _______.",
+        "answer": "Antarctica"
+      },
+      {
+        "question": "How many miles does the average honeybee travel to make one pound of honey?",
+        "answer": "43,000"
+      },
+      {
+        "question": "Which of these insects is older than the dinosaurs?",
+        "answer": "Cockroaches"
+      },
+      {
+        "question": "What percentage of the world's animals are insects?",
+        "answer": "80%"
+      },
+      {
+        "question": "Which insect is tradtionally considered good luck by many?",
+        "answer": "Ladybug"
+      },
+      {
+        "question": "How long does a Mayfly live?",
+        "answer": "8 Hours"
       }
     ]
   },
@@ -1740,6 +1816,10 @@
       {
         "question": "Jupiter has a ________ in its atmosphere but no solid surface.",
         "answer": "Hurricane"
+      },
+      {
+        "question": "Mars is known as the _____ planet.",
+        "answer": "Red"
       }
     ]
   },
@@ -2092,6 +2172,14 @@
       {
         "question": "Eloquent",
         "answer": "expressing yourself readily, clearly, effectively"
+      },
+      {
+        "question": "Junction",
+        "answer": "an act of joining or adjoining things"
+      },
+      {
+        "question": "Malicious",
+        "answer": "wishing evil or harm upon others"
       }
     ]
   },
