@@ -1102,6 +1102,26 @@
       {
         "question": "Which Greek god is the goddess of discord?",
         "answer": "Eris"
+      },
+      {
+        "question": "Which Greek is the sun titan?",
+        "answer": "Helios"
+      },
+      {
+        "question": "Which Greek god is the god of love?",
+        "answer": "Eros"
+      },
+      {
+        "question": "Which Greek god is the goddess of love, desire and beauty?",
+        "answer": "Aphrodite"
+      },
+      {
+        "question": "Which Greek god is the god of music, healing, light and truth?",
+        "answer": "Apollo"
+      },
+      {
+        "question": "Which Greek god is the personification of death?",
+        "answer": "Thanatos"
       }
     ]
   },
@@ -1994,6 +2014,42 @@
       {
         "question": "What is the capital of Maryland?",
         "answer": "Annapolis"
+      },
+      {
+        "question": "What is the capital of South Carolina?",
+        "answer": "Columbia"
+      },
+      {
+        "question": "What is the capital of Arkansas?",
+        "answer": "Little Rock"
+      },
+      {
+        "question": "What is the capital of Arizona?",
+        "answer": "Phoenix"
+      },
+      {
+        "question": "What is the capital of Mississippi?",
+        "answer": "Jackson"
+      },
+      {
+        "question": "What is the capital of Florida?",
+        "answer": "Tallahassee"
+      },
+      {
+        "question": "What is the capital of Alabama?",
+        "answer": "Montgomery"
+      },
+      {
+        "question": "What is the capital of Illinois?",
+        "answer": "Springfield"
+      },
+      {
+        "question": "What is the capital of Iowa?",
+        "answer": "Des Moines"
+      },
+      {
+        "question": "What is the capital of New Hampshire?",
+        "answer": "Concord"
       }
     ]
   },
@@ -2118,6 +2174,22 @@
       {
         "question": "Who invented swim fins?",
         "answer": "Benjamin Franklin"
+      },
+      {
+        "question": "Over 50% of world-class swimmers suffer from what kind of pain?",
+        "answer": "Shoulder pain"
+      },
+      {
+        "question": "Why is swimming often a popular choice for physical therapy?",
+        "answer": "The Water's Buoyancy"
+      },
+      {
+        "question": "What percentage of people in the United States doesn�t know how to swim?",
+        "answer": "55%"
+      },
+      {
+        "question": "What is the fastest Olympic swim stroke?",
+        "answer": "Freestyle"
       }
     ]
   },
@@ -2304,6 +2376,22 @@
       {
         "question": "Loquacious",
         "answer": "talkative, chatty"
+      },
+      {
+        "question": "Brazen",
+        "answer": "unrestrained by convention or propriety"
+      },
+      {
+        "question": "Evanescent",
+        "answer": "tending to vanish like vapor"
+      },
+      {
+        "question": "Benevolent",
+        "answer": "showing or motivated by sympathy and understanding and generosity"
+      },
+      {
+        "question": "Chicanery",
+        "answer": "deceiving someone, scam"
       }
     ]
   },
@@ -2432,6 +2520,18 @@
       {
         "question": "What is the capital of Czech Republic?",
         "answer": "Prague"
+      },
+      {
+        "question": "What is the capital of France?",
+        "answer": "Paris"
+      },
+      {
+        "question": "What is the capital of Cuba?",
+        "answer": "Havana"
+      },
+      {
+        "question": "What is the capital of Brazil?",
+        "answer": "Brasilia"
       }
     ]
   }
