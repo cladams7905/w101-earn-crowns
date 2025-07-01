@@ -132,6 +132,34 @@
       {
         "question": "Who was the 9th president of the United States?",
         "answer": "William Henry Harrison"
+      },
+      {
+        "question": "Who was the 11th president of the United States?",
+        "answer": "James K. Polk"
+      },
+      {
+        "question": "Who was the 7th president of the United States?",
+        "answer": "Andrew Jackson"
+      },
+      {
+        "question": "Who was the 16th president of the United States?",
+        "answer": "Abraham Lincoln"
+      },
+      {
+        "question": "Who was the 1st president of the United States?",
+        "answer": "George Washington"
+      },
+      {
+        "question": "Who was the 13th president of the United States?",
+        "answer": "Millard Fillmore"
+      },
+      {
+        "question": "Who was the 37th president of the United States?",
+        "answer": "Richard Nixon"
+      },
+      {
+        "question": "Who was the 18th president of the United States?",
+        "answer": "Ulysses S. Grant"
       }
     ]
   },
@@ -242,6 +270,14 @@
       {
         "question": "\"In spite of everything I still believe that people are really good at heart\"",
         "answer": "The Diary of Anne Frank"
+      },
+      {
+        "question": "\"I have been bent and broken, but - I hope - into a better shape.\"",
+        "answer": "Great Expectations"
+      },
+      {
+        "question": "\"Don't ever tell anybody anything. If you do, you start missing everybody.\"",
+        "answer": "The Catcher in the Rye"
       }
     ]
   },
@@ -1048,6 +1084,14 @@
       {
         "question": "Who sings \"I Walk the Line\"?",
         "answer": "Johnny Cash"
+      },
+      {
+        "question": "Who sings \"Dancing Queen\"?",
+        "answer": "ABBA"
+      },
+      {
+        "question": "Who sings \"Crazy in Love\"?",
+        "answer": "Beyonce"
       }
     ]
   },
@@ -1770,6 +1814,18 @@
       {
         "question": "A _______ card cautions a player and marks a foul.",
         "answer": "Yellow"
+      },
+      {
+        "question": "Which college wrote early fundamental and influental rules for soccer?",
+        "answer": "Cambridge"
+      },
+      {
+        "question": "What is the minimum number of players that can play on one soccer team?",
+        "answer": "Seven"
+      },
+      {
+        "question": "How long is a half of a soccer game?",
+        "answer": "Forty Five Minutes"
       }
     ]
   },
@@ -1960,6 +2016,42 @@
       {
         "question": "What is the state bird of Utah?",
         "answer": "California Gull"
+      },
+      {
+        "question": "What is the state bird of Rhode Island?",
+        "answer": "Rhode Island Red"
+      },
+      {
+        "question": "What is the state bird of Nevada?",
+        "answer": "Mountain Bluebird"
+      },
+      {
+        "question": "What is the state bird of Tennessee?",
+        "answer": "Mockingbird"
+      },
+      {
+        "question": "What is the state bird of Louisiana?",
+        "answer": "Brown Pelican"
+      },
+      {
+        "question": "What is the state bird of Alaska?",
+        "answer": "Willow Ptarmigan"
+      },
+      {
+        "question": "What is the state bird of Kentucky?",
+        "answer": "Cardinal"
+      },
+      {
+        "question": "What is the state bird of North Carolina?",
+        "answer": "Cardinal"
+      },
+      {
+        "question": "What is the state bird of New York?",
+        "answer": "Eastern Bluebird"
+      },
+      {
+        "question": "What is the state bird of Montana?",
+        "answer": "Western Meadowlark"
       }
     ]
   },
@@ -2050,6 +2142,38 @@
       {
         "question": "What is the capital of New Hampshire?",
         "answer": "Concord"
+      },
+      {
+        "question": "What is the capital of Idaho?",
+        "answer": "Boise"
+      },
+      {
+        "question": "What is the capital of Oregon?",
+        "answer": "Salem"
+      },
+      {
+        "question": "What is the capital of Vermont?",
+        "answer": "Montpelier"
+      },
+      {
+        "question": "What is the capital of New York?",
+        "answer": "Albany"
+      },
+      {
+        "question": "What is the capital of Virginia?",
+        "answer": "Richmond"
+      },
+      {
+        "question": "What is the capital of New Mexico?",
+        "answer": "Santa Fe"
+      },
+      {
+        "question": "What is the capital of Kentucky?",
+        "answer": "Frankfort"
+      },
+      {
+        "question": "What is the capital of Pennsylvania?",
+        "answer": "Harrisburg"
       }
     ]
   },
@@ -2104,6 +2228,30 @@
       {
         "question": "Which state is known as the \"Constitution State?\"",
         "answer": "Connecticut"
+      },
+      {
+        "question": "Which state is known as the \"Great Lakes State?\"",
+        "answer": "Michigan"
+      },
+      {
+        "question": "Which state is known as the \"Beehive State?\"",
+        "answer": "Utah"
+      },
+      {
+        "question": "Which state is known as the \"Ocean State?\"",
+        "answer": "Rhode Island"
+      },
+      {
+        "question": "Which state is known as the \"Volunteer State?\"",
+        "answer": "Tennessee"
+      },
+      {
+        "question": "Which state is known as the \"Evergreen State?\"",
+        "answer": "Washington"
+      },
+      {
+        "question": "Which state is known as the \"Empire State?\"",
+        "answer": "New York"
       }
     ]
   },
@@ -2252,6 +2400,14 @@
       {
         "question": "Malicious",
         "answer": "wishing evil or harm upon others"
+      },
+      {
+        "question": "Juncture",
+        "answer": "a joining together; the point at which two things are joined; any important point in time"
+      },
+      {
+        "question": "Malady",
+        "answer": "a sickness, illness, disease, disorder"
       }
     ]
   },
@@ -2532,6 +2688,10 @@
       {
         "question": "What is the capital of Brazil?",
         "answer": "Brasilia"
+      },
+      {
+        "question": "What is the capital of Egypt?",
+        "answer": "Cairo"
       }
     ]
   }
