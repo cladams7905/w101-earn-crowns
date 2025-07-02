@@ -1166,6 +1166,14 @@
       {
         "question": "Which Greek god is the personification of death?",
         "answer": "Thanatos"
+      },
+      {
+        "question": "Which Greek god is the god of fire and forge?",
+        "answer": "Hephaestus"
+      },
+      {
+        "question": "Which Greek god is the lord of the underworld?",
+        "answer": "Hades"
       }
     ]
   },
@@ -2174,6 +2182,14 @@
       {
         "question": "What is the capital of Pennsylvania?",
         "answer": "Harrisburg"
+      },
+      {
+        "question": "What is the capital of New Jersey?",
+        "answer": "Trenton"
+      },
+      {
+        "question": "What is the capital of Georgia?",
+        "answer": "Atlanta"
       }
     ]
   },
@@ -2252,6 +2268,10 @@
       {
         "question": "Which state is known as the \"Empire State?\"",
         "answer": "New York"
+      },
+      {
+        "question": "Which state is known as the \"Golden State?\"",
+        "answer": "California"
       }
     ]
   },
@@ -2692,6 +2712,10 @@
       {
         "question": "What is the capital of Egypt?",
         "answer": "Cairo"
+      },
+      {
+        "question": "What is the capital of Austria?",
+        "answer": "Vienna"
       }
     ]
   }
