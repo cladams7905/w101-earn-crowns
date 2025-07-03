@@ -430,6 +430,18 @@
       {
         "question": "Francis Scott Key wrote which famous piece of American history?",
         "answer": "The Star Spangled Banner"
+      },
+      {
+        "question": "11 Southern states succeeded from the union in 1860 to form the _________ States of America.",
+        "answer": "Confederate"
+      },
+      {
+        "question": "How long did the Civil War last?",
+        "answer": "Four Years"
+      },
+      {
+        "question": "Which two amendments make up the Reconstruction Acts of 1867 and give African Americans additional freedoms?",
+        "answer": "Fourteenth and Fifteenth"
       }
     ]
   },
@@ -496,6 +508,10 @@
       {
         "question": "Euphemism",
         "answer": "the substitution of a mild, indirect, or vague expression for one thought to be offensive, harsh, or blunt"
+      },
+      {
+        "question": "Procure",
+        "answer": "to obtain"
       }
     ]
   },
@@ -562,6 +578,10 @@
       {
         "question": "A semi-colon is primarily used to:",
         "answer": "Join two connected sentences"
+      },
+      {
+        "question": "Which sentence uses a semi-colon correctly?",
+        "answer": "I set out on a quest; the enemies looked fierce."
       }
     ]
   },
@@ -776,6 +796,14 @@
       {
         "question": "Who wrote The Catcher in the Rye?",
         "answer": "J.D. Salinger"
+      },
+      {
+        "question": "Who wrote Are You There God? It's Me, Margaret?",
+        "answer": "Judy Blume"
+      },
+      {
+        "question": "Who wrote The Lord of the Rings?",
+        "answer": "J.R.R. Tolkien"
       }
     ]
   },
@@ -850,6 +878,22 @@
       {
         "question": "Who composed Canon in D?",
         "answer": "Pachelbel"
+      },
+      {
+        "question": "Who composed Four Seasons?",
+        "answer": "Vivaldi"
+      },
+      {
+        "question": "Who composed Rhapsody In Blue?",
+        "answer": "Gershwin"
+      },
+      {
+        "question": "Who composed Flight of the Bumblebee?",
+        "answer": "Timsky-Korsakov"
+      },
+      {
+        "question": "Who composed Fur Elise?",
+        "answer": "Beethoven"
       }
     ]
   },
@@ -924,6 +968,18 @@
       {
         "question": "Who said \"To play without passion is inexcusable!\"",
         "answer": "Ludwig van Beethoven"
+      },
+      {
+        "question": "Who said \"For me there is something primitively soothing about this music, and it went straight to my nervous system, making me feel ten feet tall.\"",
+        "answer": "Eric Clapton"
+      },
+      {
+        "question": "Who said \"I�m not a woman. I�m a force of nature.\"",
+        "answer": "Beyonce"
+      },
+      {
+        "question": "Who said \"Music is a world within itself, with a language we all understand, with an equal opportunity. For all to sing, dance and clap their hands.\"",
+        "answer": "Stevie Wonder"
       }
     ]
   },
@@ -1092,6 +1148,10 @@
       {
         "question": "Who sings \"Crazy in Love\"?",
         "answer": "Beyonce"
+      },
+      {
+        "question": "Who sings \"Light My Fire\"?",
+        "answer": "The Doors"
       }
     ]
   },
