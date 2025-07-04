@@ -160,6 +160,26 @@
       {
         "question": "Who was the 18th president of the United States?",
         "answer": "Ulysses S. Grant"
+      },
+      {
+        "question": "Who was the 19th president of the United States?",
+        "answer": "Rutherford B. Hayes"
+      },
+      {
+        "question": "Who was the 5th president of the United States?",
+        "answer": "James Monroe"
+      },
+      {
+        "question": "Who was the 43rd president of the United States?",
+        "answer": "George W. Bush"
+      },
+      {
+        "question": "Who was the 10th president of the United States?",
+        "answer": "John Tyler"
+      },
+      {
+        "question": "Who was the 35th president of the United States?",
+        "answer": "John F. Kennedy"
       }
     ]
   },
@@ -1648,6 +1668,14 @@
       {
         "question": "How long does a Mayfly live?",
         "answer": "8 Hours"
+      },
+      {
+        "question": "Which type of insect produces a special kind of fabric?",
+        "answer": "Silkworm"
+      },
+      {
+        "question": "What is one of the fastest insects?",
+        "answer": "Horsefly"
       }
     ]
   },
@@ -1894,6 +1922,14 @@
       {
         "question": "How long is a half of a soccer game?",
         "answer": "Forty Five Minutes"
+      },
+      {
+        "question": "When was The Footbal Association founded?",
+        "answer": "1863"
+      },
+      {
+        "question": "A _______ card dismisses a player from the game.",
+        "answer": "Red"
       }
     ]
   },
