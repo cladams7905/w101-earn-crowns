@@ -180,6 +180,34 @@
       {
         "question": "Who was the 35th president of the United States?",
         "answer": "John F. Kennedy"
+      },
+      {
+        "question": "Who was the 44th president of the United States?",
+        "answer": "Barack Obama"
+      },
+      {
+        "question": "Who was the 2nd president of the United States?",
+        "answer": "John Adams"
+      },
+      {
+        "question": "Who was the 30th president of the United States?",
+        "answer": "Calvin Coolidge"
+      },
+      {
+        "question": "Who was the 32nd president of the United States?",
+        "answer": "Franklin D. Roosevelt"
+      },
+      {
+        "question": "Who was the 40th president of the United States?",
+        "answer": "Ronald Reagan"
+      },
+      {
+        "question": "Who was the 41st president of the United States?",
+        "answer": "George H. W. Bush"
+      },
+      {
+        "question": "Who was the 8th president of the United States?",
+        "answer": "Martin Van Buren"
       }
     ]
   },
@@ -914,6 +942,22 @@
       {
         "question": "Who composed Fur Elise?",
         "answer": "Beethoven"
+      },
+      {
+        "question": "Who composed In The Hall of the Mountain King?",
+        "answer": "Grieg"
+      },
+      {
+        "question": "Who composed Sorcerer's Apprentice?",
+        "answer": "Dukas"
+      },
+      {
+        "question": "Who composed Ride of the Valkyries?",
+        "answer": "Wagner"
+      },
+      {
+        "question": "Who composed Eine Kleine Nachtmusik: Allegro?",
+        "answer": "Mozart"
       }
     ]
   },
@@ -1856,6 +1900,10 @@
       {
         "question": "Who was the god of thunder and battle?",
         "answer": "Thor"
+      },
+      {
+        "question": "Who was the goddess of spring?",
+        "answer": "Eostre"
       }
     ]
   },
@@ -2156,6 +2204,26 @@
       {
         "question": "What is the state bird of Montana?",
         "answer": "Western Meadowlark"
+      },
+      {
+        "question": "What is the state bird of North Dakota?",
+        "answer": "Western Meadowlark"
+      },
+      {
+        "question": "What is the state bird of Maine?",
+        "answer": "Black-Capped Chickadee"
+      },
+      {
+        "question": "What is the state bird of Vermont?",
+        "answer": "Hermit Thrush"
+      },
+      {
+        "question": "What is the state bird of Iowa?",
+        "answer": "American Goldfinch"
+      },
+      {
+        "question": "What is the state bird of Wisconsin?",
+        "answer": "American Robin"
       }
     ]
   },
@@ -2664,6 +2732,10 @@
       {
         "question": "Chicanery",
         "answer": "deceiving someone, scam"
+      },
+      {
+        "question": "Fortuitous",
+        "answer": "occurring by happy chance"
       }
     ]
   },
