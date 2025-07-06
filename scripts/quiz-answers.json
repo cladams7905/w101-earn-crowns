@@ -2354,6 +2354,22 @@
       {
         "question": "What is the capital of Georgia?",
         "answer": "Atlanta"
+      },
+      {
+        "question": "What is the capital of Alaska?",
+        "answer": "Juneau"
+      },
+      {
+        "question": "What is the capital of Ohio?",
+        "answer": "Columbus"
+      },
+      {
+        "question": "What is the capital of Louisiana?",
+        "answer": "Baton Rouge"
+      },
+      {
+        "question": "What is the capital of Kansas?",
+        "answer": "Topeka"
       }
     ]
   },
@@ -2666,6 +2682,10 @@
       {
         "question": "What large body of water is off the Texas coast?",
         "answer": "Gulf of Mexico"
+      },
+      {
+        "question": "Which popular soft drink originated in Texas?",
+        "answer": "Dr Pepper"
       }
     ]
   },
