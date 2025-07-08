@@ -420,6 +420,14 @@
       {
         "question": "Aries is a constellation named after what animal?",
         "answer": "Ram"
+      },
+      {
+        "question": "What is the brightest star in the Aquila constellation?",
+        "answer": "Altair"
+      },
+      {
+        "question": "Which is the brightest star in the Aries constellation?",
+        "answer": "Hamal"
       }
     ]
   },
@@ -1978,6 +1986,14 @@
       {
         "question": "A _______ card dismisses a player from the game.",
         "answer": "Red"
+      },
+      {
+        "question": "How many players are on a soccer team?",
+        "answer": "11"
+      },
+      {
+        "question": "What is the international football (soccer) body called?",
+        "answer": "FIFA"
       }
     ]
   },
