@@ -1474,6 +1474,10 @@
       {
         "question": "Which ventricle pumps oxygen-poor blood to the lungs?",
         "answer": "Right ventricle"
+      },
+      {
+        "question": "What tiny blood vessels transport blood from an artery to a vein?",
+        "answer": "Capillaries"
       }
     ]
   },
@@ -1912,6 +1916,10 @@
       {
         "question": "Who was the goddess of spring?",
         "answer": "Eostre"
+      },
+      {
+        "question": "Who was the god of skiing, winter, hunting and dueling?",
+        "answer": "Ullr"
       }
     ]
   },
