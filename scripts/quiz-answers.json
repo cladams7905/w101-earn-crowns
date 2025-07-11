@@ -2002,6 +2002,10 @@
       {
         "question": "What is the international football (soccer) body called?",
         "answer": "FIFA"
+      },
+      {
+        "question": "What is the major world soccer competition that takes place every four years?",
+        "answer": "FIFA World Cup"
       }
     ]
   },
@@ -2476,6 +2480,10 @@
       {
         "question": "Which state is known as the \"Golden State?\"",
         "answer": "California"
+      },
+      {
+        "question": "Which state is known as the \"Sunflower State?\"",
+        "answer": "Kansas"
       }
     ]
   },
