@@ -2398,6 +2398,18 @@
       {
         "question": "What is the capital of Kansas?",
         "answer": "Topeka"
+      },
+      {
+        "question": "What is the capital of North Carolina?",
+        "answer": "Raleigh"
+      },
+      {
+        "question": "What is the capital of Minnesota?",
+        "answer": "Saint Paul"
+      },
+      {
+        "question": "What is the capital of Washington?",
+        "answer": "Olympia"
       }
     ]
   },
