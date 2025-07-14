@@ -208,6 +208,14 @@
       {
         "question": "Who was the 8th president of the United States?",
         "answer": "Martin Van Buren"
+      },
+      {
+        "question": "Who was the 33rd president of the United States?",
+        "answer": "Harry S. Truman"
+      },
+      {
+        "question": "Who was the 15th president of the United States?",
+        "answer": "James Buchanan"
       }
     ]
   },
@@ -2410,6 +2418,10 @@
       {
         "question": "What is the capital of Washington?",
         "answer": "Olympia"
+      },
+      {
+        "question": "What is the capital of Delaware?",
+        "answer": "Dover"
       }
     ]
   },
