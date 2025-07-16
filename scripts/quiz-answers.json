@@ -216,6 +216,22 @@
       {
         "question": "Who was the 15th president of the United States?",
         "answer": "James Buchanan"
+      },
+      {
+        "question": "Who was the 3rd president of the United States?",
+        "answer": "Thomas Jefferson"
+      },
+      {
+        "question": "Who was the 12th president of the United States?",
+        "answer": "Zachary Taylor"
+      },
+      {
+        "question": "Who was the 27th president of the United States?",
+        "answer": "William Howard Taft"
+      },
+      {
+        "question": "Who was the 17th president of the United States?",
+        "answer": "Andrew Johnson"
       }
     ]
   },
@@ -2260,6 +2276,14 @@
       {
         "question": "What is the state bird of Wisconsin?",
         "answer": "American Robin"
+      },
+      {
+        "question": "What is the state bird of Arkansas?",
+        "answer": "Mockingbird"
+      },
+      {
+        "question": "What is the state bird of Alabama?",
+        "answer": "Yellowhammer"
       }
     ]
   },
@@ -2434,6 +2458,10 @@
       {
         "question": "What is the capital of Montana?",
         "answer": "Helena"
+      },
+      {
+        "question": "What is the capital of Wisconsin?",
+        "answer": "Madison"
       }
     ]
   },
