@@ -2284,6 +2284,26 @@
       {
         "question": "What is the state bird of Alabama?",
         "answer": "Yellowhammer"
+      },
+      {
+        "question": "What is the state bird of South Carolina?",
+        "answer": "Carolina Wren"
+      },
+      {
+        "question": "What is the state bird of Pennsylvania?",
+        "answer": "Ruffed Grouse"
+      },
+      {
+        "question": "What is the state bird of Hawaii?",
+        "answer": "Nene"
+      },
+      {
+        "question": "What is the state bird of Ohio?",
+        "answer": "Cardinal"
+      },
+      {
+        "question": "What is the state bird of Colorado?",
+        "answer": "Lark Bunting"
       }
     ]
   },
