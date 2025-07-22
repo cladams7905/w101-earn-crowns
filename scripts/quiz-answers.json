@@ -2486,6 +2486,10 @@
       {
         "question": "What is the capital of Wisconsin?",
         "answer": "Madison"
+      },
+      {
+        "question": "What is the capital of Rhode Island?",
+        "answer": "Providence"
       }
     ]
   },
