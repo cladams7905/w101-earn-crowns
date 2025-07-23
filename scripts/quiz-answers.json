@@ -2502,6 +2502,14 @@
       {
         "question": "What is the capital of Rhode Island?",
         "answer": "Providence"
+      },
+      {
+        "question": "What is the capital of Hawaii?",
+        "answer": "Honolulu"
+      },
+      {
+        "question": "What is the capital of Wyoming?",
+        "answer": "Cheyenne"
       }
     ]
   },
