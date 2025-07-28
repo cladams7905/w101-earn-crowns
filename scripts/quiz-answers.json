@@ -2320,6 +2320,18 @@
       {
         "question": "What is the state bird of Georgia?",
         "answer": "Brown Thrasher"
+      },
+      {
+        "question": "What is the state bird of California?",
+        "answer": "California Quail"
+      },
+      {
+        "question": "What is the state bird of Delaware?",
+        "answer": "Blue Hen Chicken"
+      },
+      {
+        "question": "What is the state bird of Washington?",
+        "answer": "American Goldfinch"
       }
     ]
   },
