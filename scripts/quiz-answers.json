@@ -2332,6 +2332,18 @@
       {
         "question": "What is the state bird of Washington?",
         "answer": "American Goldfinch"
+      },
+      {
+        "question": "What is the state bird of Massachusetts?",
+        "answer": "Black-Capped Chickadee"
+      },
+      {
+        "question": "What is the state bird of New Jersey?",
+        "answer": "American Goldfinch"
+      },
+      {
+        "question": "What is the state bird of South Dakota?",
+        "answer": "Ring-Necked Pheasant"
       }
     ]
   },
