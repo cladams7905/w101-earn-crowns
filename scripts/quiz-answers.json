@@ -2534,6 +2534,14 @@
       {
         "question": "What is the capital of Wyoming?",
         "answer": "Cheyenne"
+      },
+      {
+        "question": "What is the capital of Massachusetts?",
+        "answer": "Boston"
+      },
+      {
+        "question": "What is the capital of North Dakota?",
+        "answer": "Bismark"
       }
     ]
   },
