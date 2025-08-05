@@ -2344,6 +2344,18 @@
       {
         "question": "What is the state bird of South Dakota?",
         "answer": "Ring-Necked Pheasant"
+      },
+      {
+        "question": "What is the state bird of Minnesota?",
+        "answer": "Common Loon"
+      },
+      {
+        "question": "What is the state bird of Indiana?",
+        "answer": "Cardinal"
+      },
+      {
+        "question": "What is the state bird of Kansas?",
+        "answer": "Western Meadowlark"
       }
     ]
   },
