@@ -236,6 +236,10 @@
       {
         "question": "Who was the 25th president of the United States?",
         "answer": "William McKinley"
+      },
+      {
+        "question": "Who was the 6th president of the United States?",
+        "answer": "John Quincy Adams"
       }
     ]
   },
@@ -2356,6 +2360,10 @@
       {
         "question": "What is the state bird of Kansas?",
         "answer": "Western Meadowlark"
+      },
+      {
+        "question": "What is the state bird of New Hampshire?",
+        "answer": "Purple Finch"
       }
     ]
   },
