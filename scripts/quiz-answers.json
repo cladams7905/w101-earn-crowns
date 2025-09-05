@@ -2578,6 +2578,10 @@
       {
         "question": "What is the capital of North Dakota?",
         "answer": "Bismark"
+      },
+      {
+        "question": "What is the capital of California?",
+        "answer": "Sacramento"
       }
     ]
   },
