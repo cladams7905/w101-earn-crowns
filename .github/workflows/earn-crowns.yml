@@ -2,20 +2,20 @@ name: Earn Crowns Daily
 
 on:
   # Run daily at 2 PM MST (9 PM UTC)
-  schedule:
-    - cron: "0 21 * * *"
+  # schedule:
+  #   - cron: "0 21 * * *"
 
-  # Allow manual triggering
-  workflow_dispatch:
-    inputs:
-      debug_mode:
-        description: "Enable debug mode (visible browser)"
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
+  # # Allow manual triggering
+  # workflow_dispatch:
+  #   inputs:
+  #     debug_mode:
+  #       description: "Enable debug mode (visible browser)"
+  #       required: false
+  #       default: "false"
+  #       type: choice
+  #       options:
+  #         - "false"
+  #         - "true"
 
 # Grant permissions for the workflow to write to the repository
 permissions:
